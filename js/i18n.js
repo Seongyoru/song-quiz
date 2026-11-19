@@ -88,6 +88,7 @@ const I18N = (() => {
     '듣기 퀴즈': ['イントロクイズ', 'Listening quiz'],
     '멤버 퀴즈': ['メンバークイズ', 'Member quiz'],
     '닮은꼴 OX': ['そっくりOX', 'Lookalike OX'],
+    '이 사진을 가져온 영상': ['この写真の元の動画', 'The video this photo came from'],
     '이 사람은 大森元貴일까요?': ['この人は大森元貴？', 'Is this Motoki Ohmori?'],
     '땡!': ['ブブー！', 'Nope!'],
     '진짜 大森元貴예요': ['本物の大森元貴です', 'It really is Motoki Ohmori'],

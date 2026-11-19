@@ -140,6 +140,7 @@
   function stopAllVideo() {
     clearMedia();
     if (typeof lsStop === 'function') lsStop();
+    if ($('#laVideo')) { $('#laVideo').innerHTML = ''; $('#laVideo').hidden = true; }
     $$('.cup-video').forEach((v) => { v.innerHTML = ''; });
   }
 
@@ -506,14 +507,20 @@
         .map((h) => {
           const file = decodeURIComponent(h.split('/').pop());
           const m = file.match(/^([OoXx])[_\-\s](.*)\.[^.]+$/);
-          return m ? { src: `private/photos/${h.split('/').pop()}`, o: m[1].toLowerCase() === 'o', name: m[2].replace(/[_\-]?\d+$/, '').trim() } : null;
+          return m ? { file, src: `private/photos/${h.split('/').pop()}`, o: m[1].toLowerCase() === 'o', name: m[2].replace(/[_\-]?\d+$/, '').trim() } : null;
         }).filter(Boolean);
+      // 사진마다 가져온 영상 (정답 뒤 증거로 틀어 준다) : sources.json = { 파일 이름: { id, t } }
+      try {
+        const sr = await fetch('private/photos/sources.json', { cache: 'no-store' });
+        if (sr.ok) { const map = await sr.json(); LA_PHOTOS.forEach((p) => { if (map[p.file]) p.video = map[p.file]; }); }
+      } catch (e) { /* 없어도 퀴즈는 된다 */ }
     } catch (e) { LA_PHOTOS = []; }
     const tab = $('#tabs a[data-mode=look]');
     if (tab) tab.hidden = !LA_PHOTOS.length;
   }
   function startLook() {
     LA = { list: shuffle(LA_PHOTOS), i: 0, score: 0, answered: false };
+    $('#laVideo').innerHTML = ''; $('#laVideo').hidden = true;
     $('#laEnd').hidden = true; $('#laCard').hidden = false;
     renderLook();
   }
@@ -535,11 +542,18 @@
     if (ok) { LA.score += 1; sfx('correct'); FX.celebrate(1); } else sfx('wrong', 0.5);
     $('#laResult').className = `la-result ${ok ? 'right' : 'wrong'}`;
     $('#laResult').innerHTML = `<b>${esc(T(ok ? '정답!' : '땡!'))}</b><span>${esc(p.o ? T('진짜 大森元貴예요') : T('이 사람은 {name}', { name: p.name || T('닮은꼴') }))}</span>`;
+    // 증거 영상 : 사진을 가져온 영상을 그 장면 근처부터 재생
+    if (p.video && p.video.id) {
+      const v = p.video;
+      $('#laVideo').innerHTML = `<div class="m-tag">${esc(T('이 사진을 가져온 영상'))}</div><div class="m-video">${ytEmbed(v.id, true).replace('playsinline=1', `playsinline=1&start=${Math.max(0, Math.floor(v.t || 0))}`)}</div>`;
+      $('#laVideo').hidden = false;
+    }
     renderLook();
   }
   function nextLook() {
     if (!LA || !LA.answered) return;
     LA.i += 1; LA.answered = false;
+    $('#laVideo').innerHTML = ''; $('#laVideo').hidden = true;
     if (LA.i >= LA.list.length) {
       $('#laCard').hidden = true; $('#laEnd').hidden = false;
       const r = LA.score / LA.list.length;

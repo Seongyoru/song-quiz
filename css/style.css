@@ -463,3 +463,5 @@ body.big .tv-opt { font-size: 22px; padding: 20px; }
 .la-result.wrong b { color: #ef6b6b; }
 body.big .la-photo { height: min(66vh, 760px); }
 body.big .la-btns .btn { flex-basis: 240px; font-size: 56px; }
+.la-video { max-width: 760px; margin: 14px auto 0; }
+body.big .la-video { max-width: 1000px; }
