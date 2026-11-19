@@ -113,14 +113,7 @@
           <div class="tt" id="lsEq">
             <div class="vinyl">
               <div class="vinyl-label">
-                <svg viewBox="0 0 64 64" aria-hidden="true">
-                  <defs><linearGradient id="gapple" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#e4fb7a"/><stop offset=".45" stop-color="#a6e23c"/><stop offset="1" stop-color="#5fb52a"/></linearGradient></defs>
-                  <path d="M32 18c-6-5-20-5-24 8-4 14 6 32 16 32 4 0 5-2 8-2s4 2 8 2c10 0 20-18 16-32-4-13-18-13-24-8z" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
-                  <path d="M32 18c-6-5-20-5-24 8-4 14 6 32 16 32 4 0 5-2 8-2s4 2 8 2c10 0 20-18 16-32-4-13-18-13-24-8z" fill="url(#gapple)"/>
-                  <path d="M32 19c0-6 2-11 6-14" stroke="#7a4a2a" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-                  <path d="M36 12c4-7 13-8 17-5-3 6-11 9-17 5z" fill="#2f8f2c" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-                  <ellipse cx="20" cy="30" rx="4" ry="7" fill="#fff" opacity=".55" transform="rotate(25 20 30)"/>
-                </svg>
+                <svg id="lsLabel" viewBox="0 0 64 64" aria-hidden="true"></svg>
                 <i class="vinyl-hole"></i>
               </div>
             </div>
@@ -179,8 +172,8 @@
     <!-- Up & Down : 발매일 · 조회수 -->
     <div id="udView" class="panel" hidden>
       <div class="ud-kind" id="udKind">
-        <button type="button" data-kind="date" data-t="발매일"></button>
         <button type="button" data-kind="views" data-t="MV 조회수"></button>
+        <button type="button" data-kind="date" data-t="발매일"></button>
       </div>
       <div class="hilo-score">
         <span><b id="udStreak">0</b><i data-t="연속"></i></span>
@@ -364,6 +357,7 @@
 <script src="js/artists/radwimps-live.js"></script>
 <script src="js/artists/radwimps-clips.js"></script>
 <script src="js/artists/radwimps-trivia.js"></script>
+<script src="js/labels.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

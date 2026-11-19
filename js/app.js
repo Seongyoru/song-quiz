@@ -123,6 +123,7 @@
     mode = MODES.includes(m) ? m : 'quiz';
     document.body.style.setProperty('--ac', A.color);
     document.body.style.setProperty('--ac2', A.color2 || A.color);
+    $('#lsLabel').innerHTML = LABELS[A.id] || LABELS._;
     $('#artistName').textContent = A.name;
     $$('#tabs a').forEach((a) => { a.href = `#/${A.id}/${a.dataset.mode}`; a.classList.toggle('on', a.dataset.mode === mode); });
     $('#quizView').hidden = mode !== 'quiz';
@@ -525,7 +526,7 @@
    * ========================================================= */
   let U = null; // { kind, a, b, streak, used:Set, busy }
   const hasViews = () => !!(A.views && Object.keys(A.views).length);
-  const udKind = () => (hasViews() ? store.get('sq_udkind', 'date') : 'date');
+  const udKind = () => (hasViews() ? store.get('sq_udkind', 'views') : 'date');
   const udVal = (i) => (U.kind === 'date' ? A.songs[i].d : (A.views[A.songs[i].t] || [])[1]);
   const udPool = () => A.songs.map((s, i) => i).filter((i) => (U.kind === 'date' ? !A.songs[i].dq : A.views && A.views[A.songs[i].t]));
   const udShow = (i) => (U.kind === 'date' ? fmtDate(A.songs[i].d) : fmtViews(udVal(i)));
