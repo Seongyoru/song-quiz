@@ -42,6 +42,7 @@
       <a data-mode="quiz" data-t="힌트 퀴즈"></a>
       <a data-mode="listen" data-t="듣기 퀴즈"></a>
       <a data-mode="trivia" data-t="멤버 퀴즈"></a>
+      <a data-mode="look" data-t="닮은꼴 OX" hidden></a>
       <a data-mode="updown" data-t="Up & Down"></a>
       <a data-mode="cup" data-t="월드컵"></a>
     </nav>
@@ -174,6 +175,30 @@
         </div>
       </div>
       <p class="ud-note" data-t="문제는 일본어 위키백과에 나온 공개 정보로 만들었어요"></p>
+    </div>
+
+    <!-- 닮은꼴 OX : 내 컴퓨터의 private/photos 사진으로만 (공개 사이트에는 없음) -->
+    <div id="laView" class="panel" hidden>
+      <div class="q-bar">
+        <span class="q-no" id="laNo"></span>
+        <span class="q-score" id="laScore"></span>
+      </div>
+      <div class="la-card" id="laCard">
+        <div class="la-photo"><img id="laImg" alt=""></div>
+        <div class="tv-q" data-t="이 사람은 大森元貴일까요?"></div>
+        <div class="la-btns" id="laBtns">
+          <button type="button" class="btn big la-o" data-ox="o">O</button>
+          <button type="button" class="btn big la-x" data-ox="x">X</button>
+        </div>
+        <div class="la-result" id="laResult" hidden></div>
+        <button type="button" class="btn main tv-next" id="laNext" hidden></button>
+      </div>
+      <div class="cup-win" id="laEnd" hidden>
+        <div class="cup-crown" id="laEndIcon">🍏</div>
+        <div class="done-title" id="laEndTitle"></div>
+        <div class="done-btns"><button type="button" class="btn main" id="laAgain" data-t="다시 하기"></button></div>
+      </div>
+      <p class="ud-note" data-t="키보드 : O = 맞다 · X = 아니다 · → = 다음"></p>
     </div>
 
     <!-- Up & Down : 발매일 · 조회수 -->

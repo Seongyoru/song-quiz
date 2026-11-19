@@ -109,7 +109,7 @@
   /* ---------- 화면 전환 ---------- */
   let A = null; // 지금 아티스트
   let mode = 'quiz';
-  const MODES = ['quiz', 'listen', 'trivia', 'updown', 'cup'];
+  const MODES = ['quiz', 'listen', 'trivia', 'look', 'updown', 'cup'];
 
   function route() {
     const [, id, m] = (location.hash || '#/').split('/');
@@ -126,11 +126,13 @@
     $('#quizView').hidden = mode !== 'quiz';
     $('#lsView').hidden = mode !== 'listen';
     $('#tvView').hidden = mode !== 'trivia';
+    $('#laView').hidden = mode !== 'look';
     $$('#tabs a').forEach((a) => { if (a.dataset.mode === 'trivia') a.hidden = !(A.trivia && A.trivia.length); });
     $('#udView').hidden = mode !== 'updown';
     $('#cupView').hidden = mode !== 'cup';
     if (mode === 'listen') { if (!L || L.artist !== A.id) newListen(); else renderListen(); }
     else if (mode === 'trivia') startTrivia();
+    else if (mode === 'look') { if (LA_PHOTOS.length) startLook(); else if (photosChecked) location.hash = `#/${A.id}/quiz`; }
     else if (mode === 'updown') startUd();
     else if (mode === 'cup') cupSetup();
     else if (!Q || Q.artist !== A.id) newQuiz(); else renderQuiz();
@@ -487,6 +489,70 @@
   }
 
   /* =========================================================
+   * 닮은꼴 OX : 내 컴퓨터에서 열 때만. private/photos 폴더의 사진을 읽는다
+   *  파일 이름 앞에 O_ (본인) / X_ (닮은꼴) 를 붙이고, 밑줄 뒤는 정답 때 보여 줄 이름
+   *  공개 사이트(GitHub Pages)에는 이 폴더가 없어서 탭이 나오지 않는다
+   * ========================================================= */
+  let LA_PHOTOS = [], photosChecked = false;
+  let LA = null; // { list:[photo], i, score, answered }
+  async function findPhotos() {
+    if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && location.protocol !== 'file:') return;
+    try {
+      const r = await fetch('private/photos/', { cache: 'no-store' });
+      if (!r.ok) return;
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      LA_PHOTOS = [...doc.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'))
+        .filter((h) => /\.(jpe?g|png|webp|gif|avif)$/i.test(h))
+        .map((h) => {
+          const file = decodeURIComponent(h.split('/').pop());
+          const m = file.match(/^([OoXx])[_\-\s](.*)\.[^.]+$/);
+          return m ? { src: `private/photos/${h.split('/').pop()}`, o: m[1].toLowerCase() === 'o', name: m[2].replace(/[_\-]?\d+$/, '').trim() } : null;
+        }).filter(Boolean);
+    } catch (e) { LA_PHOTOS = []; }
+    const tab = $('#tabs a[data-mode=look]');
+    if (tab) tab.hidden = !LA_PHOTOS.length;
+  }
+  function startLook() {
+    LA = { list: shuffle(LA_PHOTOS), i: 0, score: 0, answered: false };
+    $('#laEnd').hidden = true; $('#laCard').hidden = false;
+    renderLook();
+  }
+  function renderLook() {
+    const p = LA.list[LA.i];
+    $('#laNo').textContent = `${T('{n}번째 문제', { n: LA.i + 1 })} / ${LA.list.length}`;
+    $('#laScore').textContent = T('맞힌 문제 {a} / {b}', { a: LA.score, b: LA.i + (LA.answered ? 1 : 0) });
+    $('#laImg').src = p.src;
+    $('#laBtns').hidden = LA.answered;
+    $('#laResult').hidden = !LA.answered;
+    $('#laNext').hidden = !LA.answered;
+    $('#laNext').textContent = LA.i + 1 >= LA.list.length ? T('결과 보기') : T('다음 문제 →');
+  }
+  function answerLook(ox) {
+    if (!LA || LA.answered) return;
+    const p = LA.list[LA.i];
+    const ok = (ox === 'o') === p.o;
+    LA.answered = true;
+    if (ok) { LA.score += 1; sfx('correct'); FX.celebrate(1); } else sfx('wrong', 0.5);
+    $('#laResult').className = `la-result ${ok ? 'right' : 'wrong'}`;
+    $('#laResult').innerHTML = `<b>${esc(T(ok ? '정답!' : '땡!'))}</b><span>${esc(p.o ? T('진짜 大森元貴예요') : T('이 사람은 {name}', { name: p.name || T('닮은꼴') }))}</span>`;
+    renderLook();
+  }
+  function nextLook() {
+    if (!LA || !LA.answered) return;
+    LA.i += 1; LA.answered = false;
+    if (LA.i >= LA.list.length) {
+      $('#laCard').hidden = true; $('#laEnd').hidden = false;
+      const r = LA.score / LA.list.length;
+      $('#laEndIcon').textContent = r === 1 ? '👑' : r >= 0.7 ? '🍏' : '🌱';
+      $('#laEndTitle').textContent = T('{a} / {b} 정답', { a: LA.score, b: LA.list.length });
+      sfx(r >= 0.7 ? 'champion' : 'reveal', 0.5);
+      if (r >= 0.7) FX.celebrate(r === 1 ? 3 : 2);
+      return;
+    }
+    renderLook();
+  }
+
+  /* =========================================================
    * Up & Down : 발매일 / MV 조회수
    * ========================================================= */
   let U = null; // { kind, a, b, streak, used:Set, busy }
@@ -668,6 +734,10 @@
     if (document.fullscreenElement) document.exitFullscreen();
     else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
   });
+  // 닮은꼴 OX
+  $$('#laBtns [data-ox]').forEach((b) => b.addEventListener('click', () => answerLook(b.dataset.ox)));
+  $('#laNext').addEventListener('click', nextLook);
+  $('#laAgain').addEventListener('click', startLook);
   // 멤버 퀴즈
   $('#tvOpts').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) pickTv(Number(b.dataset.k)); });
   $('#tvNext').addEventListener('click', () => nextTv());
@@ -705,6 +775,13 @@
     if (mode === 'updown') {
       if ($('#udBtns').hidden) return;
       if (e.key === 'ArrowUp') { e.preventDefault(); answerUd('up'); } else if (e.key === 'ArrowDown') { e.preventDefault(); answerUd('down'); }
+      return;
+    }
+    if (mode === 'look') {
+      if (typing || !LA) return;
+      if (e.key === 'o' || e.key === 'O') answerLook('o');
+      else if (e.key === 'x' || e.key === 'X') answerLook('x');
+      else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); nextLook(); }
       return;
     }
     if (mode === 'trivia') {
@@ -756,5 +833,7 @@
   if (store.get('sq_big', false)) { document.body.classList.add('big'); $('#qBig').classList.add('on'); }
   syncMediaChip();
   route();
+  // 내 컴퓨터에서 열었을 때만 닮은꼴 사진을 찾는다. 찾으면 탭을 보이고, 주소가 그 탭이면 다시 그린다
+  findPhotos().then(() => { photosChecked = true; if (/\/look$/.test(location.hash)) route(); });
   if (!store.get('sq_seen3', false)) { $('#help').hidden = false; store.set('sq_seen3', true); }
 })();
