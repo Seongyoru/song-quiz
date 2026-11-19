@@ -668,7 +668,7 @@
   }
   function shareCup() {
     if (!C || !C.champ) return;
-    share(`SONG QUIZ · ${A.name}\n${T('최애 무대 월드컵')} (${T('{n}강', { n: C.size })})\n🏆 ${C.champ.t} — ${C.champ.label}\nhttps://youtu.be/${C.champ.id}\n${pageUrl()}#/${A.id}/cup`);
+    share(`SONG QUIZ · ${A.name}\n${T('최애 무대 월드컵')} (${T('{n}강', { n: C.size })})\n🏆 ${C.champ.t} — ${C.champ.label}\nhttps://youtu.be/${C.champ.id}${cupStartOf(C.champ) ? `?t=${cupStartOf(C.champ)}` : ''}\n${pageUrl()}#/${A.id}/cup`);
   }
 
   /* ---------- 이벤트 ---------- */
