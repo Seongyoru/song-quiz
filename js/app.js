@@ -47,7 +47,7 @@
   const pageUrl = () => location.href.split('#')[0];
   const sub = (s) => (I18N.lang === 'ko' ? s.ko : I18N.lang === 'en' ? (s.en !== s.t ? s.en : '') : '');
   const eraOf = (A, s) => (A.eras ? (A.eras.find((e) => (!e.from || s.d >= e.from) && (!e.to || s.d <= e.to)) || {}).label : null);
-  const ytEmbed = (id, auto) => `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(id)}?rel=0&playsinline=1${auto ? '&autoplay=1' : ''}"
+  const ytEmbed = (id, auto, start) => `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(id)}?rel=0&playsinline=1${auto ? '&autoplay=1' : ''}${start > 0 ? `&start=${Math.floor(start)}` : ''}"
     allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
   const thumb = (id) => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
 
@@ -627,13 +627,15 @@
   };
   // 공연 연도 · 장소 · 방송이나 음원 같은 메모
   const liveInfo = (e) => [e.year, e.venue, e.note && T(e.note)].filter(Boolean).join(' · ');
+  // 월드컵 영상은 하이라이트부터
+  const cupStartOf = (e) => (A.cupStart && A.cupStart[e.id]) || 0;
   function renderMatch() {
     const n = C.round.length;
     const k = C.i / 2 + 1, m = n / 2;
     $('#cupRound').textContent = n === 2 ? T('결승') : `${T('{n}강', { n })}  ${k} / ${m}`;
     $$('.cup-side').forEach((side, j) => {
       const e = C.round[C.i + j];
-      $('.cup-video', side).innerHTML = ytEmbed(e.id, false);
+      $('.cup-video', side).innerHTML = ytEmbed(e.id, false, cupStartOf(e));
       $('.cup-name', side).innerHTML = entryName(e);
     });
     $('#cupMatch').scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -658,7 +660,7 @@
     setTimeout(() => FX.confetti(2), 600);
     $$('.cup-video').forEach((v) => { v.innerHTML = ''; });
     $('#cupMatch').hidden = true; $('#cupWin').hidden = false;
-    $('#cupWinVideo').innerHTML = ytEmbed(e.id, true);
+    $('#cupWinVideo').innerHTML = ytEmbed(e.id, true, cupStartOf(e));
     $('#cupWinName').innerHTML = entryName(e);
     const places = [[e, 1], ...C.out.slice().reverse()];
     $('#cupRank').innerHTML = places.map(([x, p]) => `<li><i>${esc(T(p === 1 ? '우승' : p === 2 ? '준우승' : '4강'))}</i>${esc(x.t)} <em>${esc(x.label)}${x.year ? ` (${esc(x.year)})` : ''}</em></li>`).join('');
