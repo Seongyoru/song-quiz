@@ -435,7 +435,7 @@
   }
 
   /* =========================================================
-   * 멤버 · 밴드 퀴즈 : 4지선다, 한 판 10문제
+   * JAM'S 퀴즈 (멤버 · 밴드) : 4지선다, 한 판 10문제
    * ========================================================= */
   const TV_N = 10;
   let V = null; // { list:[idx], i, score, opts:[{t, ok}], picked }
@@ -508,7 +508,7 @@
     if (r >= 0.7) FX.celebrate(r === 1 ? 3 : 2);
   }
   function shareTv() {
-    share(`SONG QUIZ · ${A.name}\n${T('멤버 퀴즈')} ${V.score}/${V.list.length} ${'🍏'.repeat(V.score)}${'▫️'.repeat(V.list.length - V.score)}\n${pageUrl()}#/${A.id}/trivia`);
+    share(`SONG QUIZ · ${A.name}\n${T("JAM'S 퀴즈")} ${V.score}/${V.list.length} ${'🍏'.repeat(V.score)}${'▫️'.repeat(V.list.length - V.score)}\n${pageUrl()}#/${A.id}/trivia`);
   }
 
   /* =========================================================
@@ -695,7 +695,7 @@
     if (document.fullscreenElement) document.exitFullscreen();
     else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
   });
-  // 멤버 퀴즈
+  // JAM'S 퀴즈
   $('#tvOpts').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) pickTv(Number(b.dataset.k)); });
   $('#tvNext').addEventListener('click', () => nextTv());
   $('#tvAgain').addEventListener('click', startTrivia);
