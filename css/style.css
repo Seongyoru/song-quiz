@@ -419,3 +419,31 @@ body.big .ls-sec { font-size: 44px; }
 @media (prefers-reduced-motion: reduce) { .tt.on .vinyl { animation-duration: 6s; } }
 .tt { width: auto; height: 62%; }
 .ls-cover { gap: 8px; }
+
+/* 탭이 많아져서 좁은 화면에서는 옆으로 밀어서 본다 */
+.tabs { overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs a { flex: 1 0 auto; white-space: nowrap; padding: 10px 12px; }
+.tabs a[hidden] { display: none; }
+
+/* ---- 멤버 퀴즈 ---- */
+#tvView .q-bar { align-items: baseline; }
+.tv-card { margin-top: 12px; padding: 22px 18px; border-radius: 22px; background: #fff; border: 1.5px solid var(--line); box-shadow: 0 14px 34px rgba(60, 40, 120, .07); }
+.tv-card.in { animation: rowIn .35s ease; }
+.tv-q { font: 800 21px/1.45 var(--fj); text-align: center; word-break: keep-all; }
+.tv-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.tv-opt { display: flex; align-items: center; gap: 10px; padding: 14px 14px; text-align: left; font-size: 15px; line-height: 1.35; }
+.tv-opt i { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--bg); font: 700 13px var(--fd); font-style: normal; color: var(--ac); }
+.tv-opt span { word-break: keep-all; overflow-wrap: anywhere; }
+.tv-opt.right { background: var(--hit); border-color: var(--hit); color: #fff; opacity: 1; }
+.tv-opt.right i { background: rgba(255, 255, 255, .3); color: #fff; }
+.tv-opt.wrong { background: #ef6b6b; border-color: #ef6b6b; color: #fff; opacity: 1; animation: shake .4s; }
+.tv-opt.wrong i { background: rgba(255, 255, 255, .3); color: #fff; }
+.tv-opt.dim { opacity: .45; }
+.tv-opt:disabled { pointer-events: none; }
+.tv-opt.right:disabled, .tv-opt.wrong:disabled { opacity: 1; }
+.tv-next { display: block; margin: 16px auto 0; min-width: 200px; }
+.tv-end-msg { margin-top: 6px; font-size: 15px; color: var(--ink2); }
+body.big .tv-q { font-size: 32px; }
+body.big .tv-opt { font-size: 22px; padding: 20px; }
+@media (max-width: 520px) { .tv-opts { grid-template-columns: 1fr; } }

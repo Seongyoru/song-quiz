@@ -109,7 +109,7 @@
   /* ---------- 화면 전환 ---------- */
   let A = null; // 지금 아티스트
   let mode = 'quiz';
-  const MODES = ['quiz', 'listen', 'updown', 'cup'];
+  const MODES = ['quiz', 'listen', 'trivia', 'updown', 'cup'];
 
   function route() {
     const [, id, m] = (location.hash || '#/').split('/');
@@ -125,9 +125,12 @@
     $$('#tabs a').forEach((a) => { a.href = `#/${A.id}/${a.dataset.mode}`; a.classList.toggle('on', a.dataset.mode === mode); });
     $('#quizView').hidden = mode !== 'quiz';
     $('#lsView').hidden = mode !== 'listen';
+    $('#tvView').hidden = mode !== 'trivia';
+    $$('#tabs a').forEach((a) => { if (a.dataset.mode === 'trivia') a.hidden = !(A.trivia && A.trivia.length); });
     $('#udView').hidden = mode !== 'updown';
     $('#cupView').hidden = mode !== 'cup';
     if (mode === 'listen') { if (!L || L.artist !== A.id) newListen(); else renderListen(); }
+    else if (mode === 'trivia') startTrivia();
     else if (mode === 'updown') startUd();
     else if (mode === 'cup') cupSetup();
     else if (!Q || Q.artist !== A.id) newQuiz(); else renderQuiz();
@@ -430,6 +433,60 @@
   }
 
   /* =========================================================
+   * 멤버 · 밴드 퀴즈 : 4지선다, 한 판 10문제
+   * ========================================================= */
+  const TV_N = 10;
+  let V = null; // { list:[idx], i, score, opts:[{t, ok}], picked }
+  const loc = (x) => (typeof x === 'string' ? x : x[I18N.lang] || x.ko);
+  function startTrivia() {
+    const all = (A.trivia || []).map((_, i) => i);
+    V = { list: shuffle(all).slice(0, Math.min(TV_N, all.length)), i: 0, score: 0, picked: -1 };
+    $('#tvEnd').hidden = true; $('#tvCard').hidden = false;
+    nextTv(true);
+  }
+  function nextTv(first) {
+    if (!first) V.i += 1;
+    if (V.i >= V.list.length) { endTv(); return; }
+    const it = A.trivia[V.list[V.i]];
+    V.opts = shuffle([{ t: it.a, ok: true }, ...it.x.map((t) => ({ t, ok: false }))]);
+    V.picked = -1;
+    renderTv();
+    $('#tvCard').classList.remove('in'); void $('#tvCard').offsetWidth; $('#tvCard').classList.add('in');
+  }
+  function renderTv() {
+    const it = A.trivia[V.list[V.i]];
+    $('#tvNo').textContent = `${T('{n}번째 문제', { n: V.i + 1 })} / ${V.list.length}`;
+    $('#tvScore').textContent = T('맞힌 문제 {a} / {b}', { a: V.score, b: V.i + (V.picked >= 0 ? 1 : 0) });
+    $('#tvQ').textContent = loc(it.q);
+    $('#tvOpts').innerHTML = V.opts.map((o, k) => {
+      const cls = V.picked < 0 ? '' : o.ok ? 'right' : k === V.picked ? 'wrong' : 'dim';
+      return `<button type="button" class="btn tv-opt ${cls}" data-k="${k}" ${V.picked >= 0 ? 'disabled' : ''}><i>${'ABCD'[k]}</i><span>${esc(loc(o.t))}</span></button>`;
+    }).join('');
+    $('#tvNext').hidden = V.picked < 0;
+    $('#tvNext').textContent = V.i + 1 >= V.list.length ? T('결과 보기') : T('다음 문제 →');
+  }
+  function pickTv(k) {
+    if (V.picked >= 0) return;
+    V.picked = k;
+    const ok = V.opts[k].ok;
+    if (ok) { V.score += 1; sfx('correct'); FX.sparkle($$('.tv-opt')[k]); } else sfx('wrong', 0.5);
+    renderTv();
+  }
+  function endTv(silent) {
+    $('#tvCard').hidden = true; $('#tvEnd').hidden = false;
+    const r = V.score / V.list.length;
+    $('#tvEndIcon').textContent = r === 1 ? '👑' : r >= 0.7 ? '🍏' : '🌱';
+    $('#tvEndTitle').textContent = T('{a} / {b} 정답', { a: V.score, b: V.list.length });
+    $('#tvEndMsg').textContent = T(r === 1 ? '만점! 진짜 JAM\'S 인정이에요' : r >= 0.7 ? '대단해요! 미세스 박사님' : r >= 0.4 ? '좋아요! 조금만 더 알아 가 봐요' : '이제부터 알아 가면 돼요!');
+    if (silent) return;
+    sfx(r >= 0.7 ? 'champion' : 'reveal', 0.5);
+    if (r >= 0.7) FX.celebrate(r === 1 ? 3 : 2);
+  }
+  function shareTv() {
+    share(`SONG QUIZ · ${A.name}\n${T('멤버 퀴즈')} ${V.score}/${V.list.length} ${'🍏'.repeat(V.score)}${'▫️'.repeat(V.list.length - V.score)}\n${pageUrl()}#/${A.id}/trivia`);
+  }
+
+  /* =========================================================
    * Up & Down : 발매일 / MV 조회수
    * ========================================================= */
   let U = null; // { kind, a, b, streak, used:Set, busy }
@@ -611,6 +668,11 @@
     if (document.fullscreenElement) document.exitFullscreen();
     else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
   });
+  // 멤버 퀴즈
+  $('#tvOpts').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) pickTv(Number(b.dataset.k)); });
+  $('#tvNext').addEventListener('click', () => nextTv());
+  $('#tvAgain').addEventListener('click', startTrivia);
+  $('#shareTv').addEventListener('click', shareTv);
   // 듣기 퀴즈
   $('#lsPlay').addEventListener('click', lsPlay);
   $('#lsMore').addEventListener('click', lsMore);
@@ -645,6 +707,13 @@
       if (e.key === 'ArrowUp') { e.preventDefault(); answerUd('up'); } else if (e.key === 'ArrowDown') { e.preventDefault(); answerUd('down'); }
       return;
     }
+    if (mode === 'trivia') {
+      if (typing || !V) return;
+      const k = ['1', '2', '3', '4'].indexOf(e.key);
+      if (k >= 0 && !$('#tvCard').hidden) { e.preventDefault(); pickTv(k); }
+      else if ((e.key === 'Enter' || e.key === 'ArrowRight') && !$('#tvNext').hidden) { e.preventDefault(); nextTv(); }
+      return;
+    }
     if (mode === 'listen') {
       if (typing || !L || L.state !== 'play') { if (!typing && e.key === 'ArrowRight') { e.preventDefault(); newListen(); } return; }
       if (e.code === 'Space') { e.preventDefault(); lsPlay(); }
@@ -674,7 +743,7 @@
       const cls = $('#hcB').className.replace('hcard', '').trim();
       renderUd(); if (shown) udCard($('#hcB'), U.b, true, cls);
       if (!$('#udOver').hidden) $('#udOverTitle').textContent = T('{n}연속으로 맞혔어요!', { n: U.streak });
-    } else if (mode === 'listen') { if (L) renderListen(); } else if (mode === 'cup') {
+    } else if (mode === 'listen') { if (L) renderListen(); } else if (mode === 'trivia') { if (V && !$('#tvCard').hidden) renderTv(); else if (V) endTv(true); } else if (mode === 'cup') {
       if (!$('#cupSetup').hidden) cupSetup();
       else if (!$('#cupMatch').hidden) $$('.cup-side').forEach((side, j) => { $('.cup-name', side).innerHTML = entryName(C.round[C.i + j]); });
     } else renderQuiz();

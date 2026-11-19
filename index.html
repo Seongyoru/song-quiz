@@ -41,6 +41,7 @@
     <nav class="tabs" id="tabs">
       <a data-mode="quiz" data-t="힌트 퀴즈"></a>
       <a data-mode="listen" data-t="듣기 퀴즈"></a>
+      <a data-mode="trivia" data-t="멤버 퀴즈"></a>
       <a data-mode="updown" data-t="Up & Down"></a>
       <a data-mode="cup" data-t="월드컵"></a>
     </nav>
@@ -152,6 +153,29 @@
       <p class="q-keys" data-t="키보드 : 스페이스 = 듣기 · ↑ = 3초 더 · 엔터 = 답 확인 · → = 다음 문제"></p>
     </div>
 
+    <!-- 멤버 · 밴드 퀴즈 (4지선다, 한 판 10문제) -->
+    <div id="tvView" class="panel" hidden>
+      <div class="q-bar">
+        <span class="q-no" id="tvNo"></span>
+        <span class="q-score" id="tvScore"></span>
+      </div>
+      <div class="tv-card" id="tvCard">
+        <div class="tv-q" id="tvQ"></div>
+        <div class="tv-opts" id="tvOpts"></div>
+        <button type="button" class="btn main tv-next" id="tvNext" hidden></button>
+      </div>
+      <div class="cup-win" id="tvEnd" hidden>
+        <div class="cup-crown" id="tvEndIcon">🍏</div>
+        <div class="done-title" id="tvEndTitle"></div>
+        <p class="tv-end-msg" id="tvEndMsg"></p>
+        <div class="done-btns">
+          <button type="button" class="btn main" id="shareTv" data-t="결과 공유"></button>
+          <button type="button" class="btn" id="tvAgain" data-t="다시 하기"></button>
+        </div>
+      </div>
+      <p class="ud-note" data-t="문제는 일본어 위키백과에 나온 공개 정보로 만들었어요"></p>
+    </div>
+
     <!-- Up & Down : 발매일 · 조회수 -->
     <div id="udView" class="panel" hidden>
       <div class="ud-kind" id="udKind">
@@ -247,6 +271,7 @@
 <script src="js/artists/mga-media.js"></script>
 <script src="js/artists/mga-live.js"></script>
 <script src="js/artists/mga-clips.js"></script>
+<script src="js/artists/mga-trivia.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
