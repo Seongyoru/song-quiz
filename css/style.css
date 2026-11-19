@@ -501,3 +501,8 @@ body.big .cup-pick { font-size: 20px; padding: 16px; }
 .cup-name.big .cup-info { font-size: 14px; }
 body.big .cup-name em { font-size: 17px; }
 body.big .cup-name .cup-info { font-size: 16px; }
+
+/* 멤버 퀴즈 : 한자 옆 한글 읽기 */
+.tv-read { font-size: .72em; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.tv-opt.right .tv-read, .tv-opt.wrong .tv-read { color: rgba(255, 255, 255, .85); }
+.tv-q .tv-read { font-size: .62em; margin-left: 1px; }

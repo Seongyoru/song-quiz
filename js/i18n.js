@@ -182,6 +182,7 @@ const I18N = (() => {
     '『{album}』의 {n}번 트랙이에요': ['『{album}』の{n}曲目です', 'Track {n} on "{album}"'],
     '타이업 작품은 『{name}』이에요': ['タイアップ作品は『{name}』です', 'The tie-in is "{name}"'],
     '{date}에 나왔어요': ['{date}にリリースされました', 'Released on {date}'],
+    '제목의 첫 글자는 「{c}」, 한글로는 「{k}」예요': ['タイトルの最初の文字は「{c}」です', 'The title starts with "{c}"'],
     '제목의 첫 글자는 「{c}」예요': ['タイトルの最初の文字は「{c}」です', 'The title starts with "{c}"'],
     '여럿이 할 때': ['みんなで遊ぶとき', 'Playing in a group'],
     '스무고개처럼 힌트가 하나씩 열려요. 처음엔 막연한 힌트(시기 · 발매 연도)부터, 갈수록 앨범 · 트랙 번호 · 타이업 · 첫 글자처럼 확실한 힌트가 나와요. 답을 적고 「답 확인」을 누르거나, 「정답 공개」로 바로 볼 수 있어요.': ['ヒントが1つずつ開きます。最初はぼんやりしたヒント（時期・リリース年）から、だんだんアルバム・曲順・タイアップ・最初の文字のようなはっきりしたヒントになります。答えを入力して「答え合わせ」を押すか、「正解を見る」ですぐ確認できます。', 'Hints open one at a time, from vague (era, year) to specific (album, track number, tie-in, first letter). Type an answer and press Check, or press Show answer.'],

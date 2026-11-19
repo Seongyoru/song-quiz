@@ -100,7 +100,9 @@
     if (s.album && s.track) h.push(T('『{album}』의 {n}번 트랙이에요', { album: s.album, n: s.track }));
     if (s.tieName) h.push(T('타이업 작품은 『{name}』이에요', { name: s.tieName }));
     h.push(T('{date}에 나왔어요', { date: fmtDate(s.d) }));
-    h.push(T('제목의 첫 글자는 「{c}」예요', { c: [...s.t][0] }));
+    // 한국어 화면에서는 한글 표기의 첫 글자도 함께 (예 : 「ケ」, 한글로는 「케」)
+    const c = [...s.t][0], k = s.ko ? [...s.ko.replace(/\s/g, '')][0] : '';
+    h.push(I18N.lang === 'ko' && k && k !== c ? T('제목의 첫 글자는 「{c}」, 한글로는 「{k}」예요', { c, k }) : T('제목의 첫 글자는 「{c}」예요', { c }));
     return h;
   }
   const answers = (s) => [s.t, s.t.replace(/\s*[(（].*?[)）]\s*/g, ''), s.t.replace(/\s*feat\..*$/i, ''), s.ko, s.en, ...(s.alias || '').split('|')]
@@ -438,6 +440,29 @@
   const TV_N = 10;
   let V = null; // { list:[idx], i, score, opts:[{t, ok}], picked }
   const loc = (x) => (typeof x === 'string' ? x : x[I18N.lang] || x.ko);
+  // 한국어 화면에서는 한자 · 가나 옆에 한글 읽기를 작게 붙인다
+  const NON_LATIN = /[぀-ヿ㐀-鿿]/;
+  function readingOf(word) {
+    const w = word.replace(/^[『「"“]|[』」"”]$/g, '');
+    if (!NON_LATIN.test(w)) return '';
+    if (A.readings && A.readings[w]) return A.readings[w];
+    const song = A.songs.find((x) => x.t === w);
+    return song && song.ko ? song.ko : '';
+  }
+  const withReading = (text) => {
+    if (I18N.lang !== 'ko') return esc(text);
+    const r = readingOf(text);
+    return r ? `${esc(text)} <small class="tv-read">${esc(r)}</small>` : esc(text);
+  };
+  // 질문 안의 이름들 : 「大森元貴의 생일은?」 → 大森元貴(오모리 모토키)의 생일은?
+  const qWithReading = (text) => {
+    if (I18N.lang !== 'ko' || !A.readings) return esc(text);
+    const keys = Object.keys(A.readings).sort((a, b) => b.length - a.length);
+    const re = new RegExp(keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+    let out = '', last = 0;
+    for (const m of text.matchAll(re)) { out += esc(text.slice(last, m.index)) + `${esc(m[0])}<small class="tv-read">(${esc(A.readings[m[0]])})</small>`; last = m.index + m[0].length; }
+    return out + esc(text.slice(last));
+  };
   function startTrivia() {
     const all = (A.trivia || []).map((_, i) => i);
     V = { list: shuffle(all).slice(0, Math.min(TV_N, all.length)), i: 0, score: 0, picked: -1 };
@@ -457,10 +482,10 @@
     const it = A.trivia[V.list[V.i]];
     $('#tvNo').textContent = `${T('{n}번째 문제', { n: V.i + 1 })} / ${V.list.length}`;
     $('#tvScore').textContent = T('맞힌 문제 {a} / {b}', { a: V.score, b: V.i + (V.picked >= 0 ? 1 : 0) });
-    $('#tvQ').textContent = loc(it.q);
+    $('#tvQ').innerHTML = qWithReading(loc(it.q));
     $('#tvOpts').innerHTML = V.opts.map((o, k) => {
       const cls = V.picked < 0 ? '' : o.ok ? 'right' : k === V.picked ? 'wrong' : 'dim';
-      return `<button type="button" class="btn tv-opt ${cls}" data-k="${k}" ${V.picked >= 0 ? 'disabled' : ''}><i>${'ABCD'[k]}</i><span>${esc(loc(o.t))}</span></button>`;
+      return `<button type="button" class="btn tv-opt ${cls}" data-k="${k}" ${V.picked >= 0 ? 'disabled' : ''}><i>${'ABCD'[k]}</i><span>${withReading(loc(o.t))}</span></button>`;
     }).join('');
     $('#tvNext').hidden = V.picked < 0;
     $('#tvNext').textContent = V.i + 1 >= V.list.length ? T('결과 보기') : T('다음 문제 →');
