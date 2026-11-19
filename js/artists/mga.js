@@ -20,7 +20,8 @@ ARTISTS.push({
   color2: '#a6e23c',
   eras: [
     { label: 'Phase 1', to: '2021-12-31' },
-    { label: 'Phase 2', from: '2022-01-01' },
+    { label: 'Phase 2', from: '2022-01-01', to: '2025-12-31' },
+    { label: 'Phase 3', from: '2026-01-01' },
   ],
   albums: {
     Progressive: { d: '2015-02-18', kind: 'mini' },
@@ -168,7 +169,7 @@ ARTISTS.push({
     { t: 'クスシキ', ko: '쿠스시키', en: 'Kusushiki', d: '2025-04-05', type: 'digital', album: null, tie: 'anime', tieName: '薬屋のひとりごと' },
     { t: '天国', ko: '텐고쿠', en: 'Tengoku', alias: 'てんごく|천국|heaven', d: '2025-05-02', type: 'digital', album: null, tie: 'movie', tieName: '#真相をお話しします' },
     { t: 'breakfast', ko: '브렉퍼스트', en: 'breakfast', alias: '아침밥', d: '2025-06-04', type: 'digital', album: null, tie: 'tv', tieName: 'サン!シャイン' },
-    /* ---- POPS (2026) ---- */
+    /* ---- POPS (2026) : Phase 3 첫 앨범. 2025년에 나온 앞 세 곡은 Phase 2 ---- */
     { t: 'Carrying Happiness', ko: '캐링 해피니스', en: 'Carrying Happiness', d: '2025-07-19', type: 'digital', album: 'POPS', track: 14, tie: 'other', tieName: '東京ディズニーリゾート' },
     { t: '夏の影', ko: '나츠노 카게', en: 'Natsu no Kage', alias: 'なつのかげ|여름의 그림자|나츠노카게', d: '2025-08-11', type: 'digital', album: 'POPS', track: 15, tie: 'cm', tieName: 'キリン 午後の紅茶' },
     { t: 'GOOD DAY', ko: '굿 데이', en: 'GOOD DAY', d: '2025-09-28', type: 'digital', album: 'POPS', track: 6, tie: 'cm', tieName: 'キリン グッドエール' },
