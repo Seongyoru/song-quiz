@@ -447,21 +447,3 @@ body.big .ls-sec { font-size: 44px; }
 body.big .tv-q { font-size: 32px; }
 body.big .tv-opt { font-size: 22px; padding: 20px; }
 @media (max-width: 520px) { .tv-opts { grid-template-columns: 1fr; } }
-
-/* ---- 닮은꼴 OX (내 컴퓨터 전용) ---- */
-.la-card { margin-top: 12px; padding: 18px; border-radius: 22px; background: #fff; border: 1.5px solid var(--line); text-align: center; }
-.la-photo { display: grid; place-items: center; height: min(58vh, 520px); border-radius: 16px; background: var(--bg); overflow: hidden; margin-bottom: 14px; }
-.la-photo img { max-width: 100%; max-height: 100%; object-fit: contain; }
-.la-btns { display: flex; justify-content: center; gap: 14px; margin-top: 16px; }
-.la-btns .btn { flex: 0 1 180px; font: 800 40px var(--fd); padding: 12px; color: #fff; }
-.la-o { background: #3fbf6a; border-color: #3fbf6a; }
-.la-x { background: #ef6b6b; border-color: #ef6b6b; }
-.la-result { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; animation: rowIn .35s ease; }
-.la-result b { font: 800 30px var(--fj); }
-.la-result span { font-size: 17px; font-weight: 700; color: var(--ink2); }
-.la-result.right b { color: var(--hit); }
-.la-result.wrong b { color: #ef6b6b; }
-body.big .la-photo { height: min(66vh, 760px); }
-body.big .la-btns .btn { flex-basis: 240px; font-size: 56px; }
-.la-video { max-width: 760px; margin: 14px auto 0; }
-body.big .la-video { max-width: 1000px; }
