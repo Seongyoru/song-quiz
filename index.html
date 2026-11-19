@@ -41,7 +41,7 @@
     <nav class="tabs" id="tabs">
       <a data-mode="quiz" data-t="힌트 퀴즈"></a>
       <a data-mode="listen" data-t="듣기 퀴즈"></a>
-      <a data-mode="trivia" data-t="JAM'S 퀴즈"></a>
+      <a data-mode="trivia"></a>
       <a data-mode="updown" data-t="Up & Down"></a>
       <a data-mode="cup" data-t="월드컵"></a>
     </nav>
@@ -253,8 +253,8 @@
       <dd data-t="「크게 보기」나 「전체 화면」으로 띄워 놓고, 한 사람이 힌트를 열고 다 같이 맞혀 보세요. 「싱글 · 배포 싱글만」으로 바꾸면 유명한 곡 위주로 나와요."></dd>
       <dt data-t="듣기 퀴즈"></dt>
       <dd data-t="가려진 레코드판에서 곡의 일부분만 들려줘요. 인트로 Q는 처음, 배속 Q는 하이라이트를 빠르게, 아웃트로 Q는 마지막 부분이에요. 3초로 시작해서 3초씩 더 들을 수 있어요. 유튜브 프리미엄이 아니면 광고가 나올 수 있어요."></dd>
-      <dt data-t="JAM'S 퀴즈"></dt>
-      <dd data-t="멤버와 밴드에 관한 4지선다 문제가 한 판에 10개 나와요. 생일 · 결성 · 수상 · 라이브까지, 진짜 JAM'S라면 몇 개나 맞힐 수 있을까요?"></dd>
+      <dt data-t="팬 퀴즈"></dt>
+      <dd data-t="아티스트와 멤버에 관한 4지선다 문제가 한 판에 10개 나와요. 생일 · 데뷔 · 수상 · 라이브까지, 진짜 팬이라면 몇 개나 맞힐 수 있을까요? (미세스는 「JAM'S 퀴즈」)"></dd>
       <dt data-t="Up & Down"></dt>
       <dd data-t="오른쪽 곡이 왼쪽 곡보다 나중에 나왔는지(발매일), MV 조회수가 많은지(조회수) UP · DOWN 으로 골라요. 틀릴 때까지 몇 번 연속으로 맞힐 수 있을까요?"></dd>
       <dt data-t="월드컵"></dt>
@@ -274,6 +274,95 @@
 <script src="js/artists/mga-live.js"></script>
 <script src="js/artists/mga-clips.js"></script>
 <script src="js/artists/mga-trivia.js"></script>
+<script src="js/artists/higedan.js"></script>
+<script src="js/artists/higedan-media.js"></script>
+<script src="js/artists/higedan-live.js"></script>
+<script src="js/artists/higedan-trivia.js"></script>
+<script src="js/artists/vaundy.js"></script>
+<script src="js/artists/vaundy-media.js"></script>
+<script src="js/artists/vaundy-live.js"></script>
+<script src="js/artists/vaundy-clips.js"></script>
+<script src="js/artists/vaundy-trivia.js"></script>
+<script src="js/artists/ado.js"></script>
+<script src="js/artists/ado-media.js"></script>
+<script src="js/artists/ado-live.js"></script>
+<script src="js/artists/ado-clips.js"></script>
+<script src="js/artists/ado-trivia.js"></script>
+<script src="js/artists/backnumber.js"></script>
+<script src="js/artists/backnumber-media.js"></script>
+<script src="js/artists/backnumber-live.js"></script>
+<script src="js/artists/backnumber-clips.js"></script>
+<script src="js/artists/backnumber-trivia.js"></script>
+<script src="js/artists/kinggnu.js"></script>
+<script src="js/artists/kinggnu-media.js"></script>
+<script src="js/artists/kinggnu-live.js"></script>
+<script src="js/artists/kinggnu-clips.js"></script>
+<script src="js/artists/kinggnu-trivia.js"></script>
+<script src="js/artists/yonezu.js"></script>
+<script src="js/artists/yonezu-media.js"></script>
+<script src="js/artists/yonezu-live.js"></script>
+<script src="js/artists/yonezu-clips.js"></script>
+<script src="js/artists/yonezu-trivia.js"></script>
+<script src="js/artists/tuki.js"></script>
+<script src="js/artists/tuki-media.js"></script>
+<script src="js/artists/tuki-live.js"></script>
+<script src="js/artists/tuki-clips.js"></script>
+<script src="js/artists/tuki-trivia.js"></script>
+<script src="js/artists/yoasobi.js"></script>
+<script src="js/artists/yoasobi-media.js"></script>
+<script src="js/artists/yoasobi-live.js"></script>
+<script src="js/artists/yoasobi-clips.js"></script>
+<script src="js/artists/yoasobi-trivia.js"></script>
+<script src="js/artists/yorushika.js"></script>
+<script src="js/artists/yorushika-media.js"></script>
+<script src="js/artists/yorushika-live.js"></script>
+<script src="js/artists/yorushika-clips.js"></script>
+<script src="js/artists/yorushika-trivia.js"></script>
+<script src="js/artists/ryokushaka.js"></script>
+<script src="js/artists/ryokushaka-media.js"></script>
+<script src="js/artists/ryokushaka-live.js"></script>
+<script src="js/artists/ryokushaka-clips.js"></script>
+<script src="js/artists/ryokushaka-trivia.js"></script>
+<script src="js/artists/aimyon.js"></script>
+<script src="js/artists/aimyon-media.js"></script>
+<script src="js/artists/aimyon-live.js"></script>
+<script src="js/artists/aimyon-clips.js"></script>
+<script src="js/artists/aimyon-trivia.js"></script>
+<script src="js/artists/aimer.js"></script>
+<script src="js/artists/aimer-media.js"></script>
+<script src="js/artists/aimer-live.js"></script>
+<script src="js/artists/aimer-clips.js"></script>
+<script src="js/artists/aimer-trivia.js"></script>
+<script src="js/artists/rokudenashi.js"></script>
+<script src="js/artists/rokudenashi-media.js"></script>
+<script src="js/artists/rokudenashi-live.js"></script>
+<script src="js/artists/rokudenashi-clips.js"></script>
+<script src="js/artists/rokudenashi-trivia.js"></script>
+<script src="js/artists/yuuri.js"></script>
+<script src="js/artists/yuuri-media.js"></script>
+<script src="js/artists/yuuri-live.js"></script>
+<script src="js/artists/yuuri-clips.js"></script>
+<script src="js/artists/yuuri-trivia.js"></script>
+<script src="js/artists/dish.js"></script>
+<script src="js/artists/dish-media.js"></script>
+<script src="js/artists/dish-live.js"></script>
+<script src="js/artists/dish-clips.js"></script>
+<script src="js/artists/dish-trivia.js"></script>
+<script src="js/artists/taniyuuki.js"></script>
+<script src="js/artists/taniyuuki-media.js"></script>
+<script src="js/artists/taniyuuki-live.js"></script>
+<script src="js/artists/taniyuuki-clips.js"></script>
+<script src="js/artists/taniyuuki-trivia.js"></script>
+<script src="js/artists/humpback.js"></script>
+<script src="js/artists/humpback-media.js"></script>
+<script src="js/artists/humpback-live.js"></script>
+<script src="js/artists/humpback-clips.js"></script>
+<script src="js/artists/humpback-trivia.js"></script>
+<script src="js/artists/radwimps.js"></script>
+<script src="js/artists/radwimps-media.js"></script>
+<script src="js/artists/radwimps-live.js"></script>
+<script src="js/artists/radwimps-clips.js"></script>
+<script src="js/artists/radwimps-trivia.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

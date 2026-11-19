@@ -1,0 +1,58 @@
+'use strict';
+/* DISH// 월드컵 영상 (공식 채널 라이브 영상) 과 Up & Down 조회수 (공식 MV)
+ * 2026-11 유튜브 검색으로 모음. lives : [곡, 영상 id, 공연 이름, 연도, 장소, 메모] (공연 정보는 각 영상 제목 · 설명란 기준)  views : 곡 → [영상 id, 조회수] */
+(() => {
+  const a = ARTISTS.find((x) => x.id === 'dish');
+  a.viewsAt = '2026-11-19';
+  a.lives = [["勝手にMY SOUL","aYstkpzTCy8","LIVE TOUR -DISH//- 2018","2018","STUDIO COAST",""],
+    ["I Can Hear","mXhBkeWgyuM","LIVE TOUR -DISH//- 2018","2018","STUDIO COAST",""],
+    ["Starting Over","w1j5hA30WBs","DISH//音楽団祭り2018","2018","日比谷野外大音楽堂",""],
+    ["猫","es-TULCdfvQ","DISH// Spring Tour 2019","2019","市川市民文化会館",""],
+    ["好きになってくれてありがとう","S2qJyW5vvd8","LIVE TOUR -DISH//- 2019～2020","2020","パシフィコ横浜",""],
+    ["birds","o8MD3XVcnDc","LIVE TOUR -DISH//- 2019～2020","2020","パシフィコ横浜",""],
+    ["Loop.","8auBTfn1bbo","LIVE TOUR -DISH//- 2019～2020","2020","パシフィコ横浜",""],
+    ["猫","TwiEL7bUmAI","DISH// LIVE 2020 -First Step-","2020","",""],
+    ["ビリビリ☆ルールブック","jC72QvA7pCA","DISH// LIVE 2020 -First Step-","2020","",""],
+    ["僕たちがやりました","48JQXNhyyVU","DISH// LIVE 2020 -First Step-","2020","",""],
+    ["勝手にMY SOUL","4phDk4hrVpw","DISH// SUMMER AMUSEMENT'20 -Tasty Activity-","2020","",""],
+    ["Seagull","Yq_uW2Plh9M","DISH// Spring Tour 2021 \"X\"","2021","中野サンプラザ",""],
+    ["No.1","dzssTKw4yXU","DISH// Spring Tour 2021 \"X\"","2021","中野サンプラザ",""],
+    ["ルーザー","W-4YWgywr6M","DISH// Spring Tour 2021 \"X\"","2021","中野サンプラザ",""],
+    ["沈丁花","TYhOBzTwpkI","DISH// SUMMER AMUSEMENT '21 -森羅万象-","2021","富士急ハイランド・コニファーフォレスト",""],
+    ["しわくちゃな雲を抱いて","FNBE6YBV92E","DISH// SUMMER AMUSEMENT '22 -PLANET-","2022","富士急ハイランド・コニファーフォレスト",""],
+    ["Replay","MKb00H7y4E4","DISH// SUMMER AMUSEMENT '22 -PLANET-","2022","富士急ハイランド・コニファーフォレスト",""],
+    ["JUMPer","YeenCQ1igIk","DISH// ARENA LIVE 2022 \"オトハラク\"","2022","国立代々木競技場第一体育館",""],
+    ["沈丁花","qOVB09Anq4s","DISH// ARENA LIVE 2023 「HAPPY？」","2023","",""],
+    ["プランA","mBzAG8nkn1U","DISH// HALL TOUR 2024「GARDEN」","2024","東京ガーデンシアター",""],
+    ["朝、月面も笑っている","KX8evkop6J0","DISH// HALL TOUR 2024「GARDEN」","2024","",""],
+    ["躍りゃんせ","_Q_Wr0JhFhQ","DISH// SUMMER AMUSEMENT '25 -GAME-","2025","富士急ハイランド・コニファーフォレスト",""]];
+  a.views = {
+    "へんてこ":["HqwVGzmQ_1w",2332241],
+    "Shape of Love":["bbP3deJs91c",2344820],
+    "SAUNA SONG":["fWD3oEiyjdk",2344079],
+    "僕らが強く。":["I86VksAreLg",5604592],
+    "あたりまえ":["VtSXZTtxGjs",1231276],
+    "ルーザー":["bswuJwr7f1A",1499119],
+    "バースデー":["d444M9UIWOk",2476817],
+    "沈丁花":["TkHcaAVQoiI",53720058],
+    "ありのまんまが愛しい君へ":["Tzo593aSR5k",3650224],
+    "No.1":["PyFQzoJJz_8",13975217],
+    "しわくちゃな雲を抱いて":["qzQmOOvGopI",9312144],
+    "Replay":["rqoYUHIZZTg",3055429],
+    "五明後日":["NG9AYyKmJtw",5391192],
+    "万々歳":["sA5thqqF4yY",4983390],
+    "エンドロールは悲しくない":["FVGIDcd-3qM",2036053],
+    "ウェディングソング":["6LhQBTodWtQ",2273386],
+    "HAPPY":["h5a8SCeZEts",1729649],
+    "Dreamer Drivers":["YLNMAEuZ3KU",1885645],
+    "朝、月面も笑っている":["LFG_iqpGMss",3338769],
+    "ごはん":["RAjfbpXvTdk",2841207],
+    "ヒーロー":["1ciYrb24MDk",2394428],
+    "晴れるYA!":["Hn8Vec7jr8M",37929],
+    "いつかはメリークリスマス":["gESal3P1YPQ",33735],
+    "サイショの恋〜モテたくて〜":["Jldtov7M29g",44100],
+    "変顔でバイバイ!!":["2v_LNTPRvQM",26201],
+    "イエ〜ィ!!☆夏休み":["7xQ7MkfzTDI",27059],
+    "俺たちルーキーズ":["MaKTwqSMLJw",36565],
+    "サクラボシ":["_NbDEO35n3s",87220]};
+})();

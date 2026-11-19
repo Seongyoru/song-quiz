@@ -1,0 +1,57 @@
+'use strict';
+/* 緑黄色社会 월드컵 영상 (공식 채널 라이브 영상) 과 Up & Down 조회수 (공식 MV)
+ * 2026-11 유튜브 검색으로 모음. lives : [곡, 영상 id, 공연 이름, 연도, 장소, 메모] (공연 정보는 각 영상 제목 · 설명란 기준)  views : 곡 → [영상 id, 조회수] */
+(() => {
+  const a = ARTISTS.find((x) => x.id === 'ryokushaka');
+  a.viewsAt = '2026-11-19';
+  a.lives = [["想い人","QLBfxG0cenQ","リョクシャ化計画2019","2019","",""],
+    ["Shout Baby","CMvep1V6rZQ","奏でた音の行方 vol.3","2020","",""],
+    ["Mela!","Oezmni8SklA","SINGALONG tour 2020 -last piece-","2020","",""],
+    ["LADYBUG","_JB2ChQJnwA","SINGALONG tour 2020 -last piece-","2020","",""],
+    ["夏を生きる","E5kEESojt7w","SINGALONG tour 2020 -夏を生きる-","2020","",""],
+    ["アーユーレディー","U1CMNk7GnNo","リョクシャ化計画2021","2021","",""],
+    ["LITMUS","QgT3QZygVCc","奏でた音の行方 vol.6","2021","",""],
+    ["キャラクター","0krEjMMrxE0","緑黄色社会×日本武道館 \"20122022\"","2022","日本武道館",""],
+    ["Starry Drama","y-bQzMW0FIY","pink blue tour 2023","2023","",""],
+    ["サマータイムシンデレラ","3TtjN7tECuY","奏でた音の行方 vol.9","2023","",""],
+    ["花になって","BQ2MmNWV0uM","リョクシャ化計画2023-2024","2024","日本ガイシホール",""],
+    ["始まりの歌","rS06cNl8VHo","リョクシャ化計画2023-2024","2024","日本ガイシホール",""],
+    ["恥ずかしいか青春は","_imYl79cK2U","ROCK IN JAPAN FESTIVAL 2024","2024","",""],
+    ["僕らはいきものだから","e-AsdTtkB5A","ROCK IN JAPAN FESTIVAL 2024","2024","",""],
+    ["馬鹿の一つ覚え","Zw1e-9PdUtk","緑黄色社会 Live House Tour \"Laugh\"","2024","Zepp Haneda",""],
+    ["Mela!","h-fo3m8SbMw","Channel Us 2025","2025","東京体育館",""],
+    ["サマータイムシンデレラ","L3-Yivios98","Channel Us 2025","2025","東京体育館",""],
+    ["PLAYER 1","kApzGfl6rAI","Channel Us 2025","2025","東京体育館",""],
+    ["illusion","zrgJOQ-PjF0","Channel Us 2025","2025","東京体育館",""],
+    ["章","YQ9cgAqSqqA","奏でた音の行方 vol.10","2026","",""],
+    ["Alice","d7OXdVmAfhs","下北沢GARAGE","2015","下北沢GARAGE",""]];
+  a.views = {
+    "始まりの歌":["cjf9c6TwH6o",6304351],
+    "sabotage":["FWQzurioulQ",9286406],
+    "Shout Baby":["Ww8oxgqDQSs",36039298],
+    "Mela!":["aRDURmIYBZ4",127586663],
+    "夏を生きる":["I6VkVm4J3bM",2430596],
+    "結証":["1422nca02G4",14846429],
+    "たとえたとえ":["v-GwqWH_72s",1863942],
+    "ずっとずっとずっと":["GaSM-9V18t8",5119278],
+    "アーユーレディー":["tuf7boOx_SE",2131739],
+    "LITMUS":["-xpP0dmoy8s",13559495],
+    "キャラクター":["ulforNn47PM",25343206],
+    "陽はまた昇るから":["e5FEOVTRfFc",8226586],
+    "時のいたずら":["wIPB3jRsnB0",1195701],
+    "ブレス":["h54_B3XxRYI",1041595],
+    "ミチヲユケ":["su5o63BnOUM",5105766],
+    "ピンクブルー":["vudrTjCf-LM",4704373],
+    "うそつき":["5WYGW1c2j1k",2487665],
+    "サマータイムシンデレラ":["nFR3uXaR0wk",32940065],
+    "マジックアワー":["7AM6VgOvmMQ",6490038],
+    "花になって":["v-WcMQbXbKY",83406908],
+    "Party!!":["7-h8UA7fFmg",6644647],
+    "夜祭音頭":["Tz_16uhUMGM",794225],
+    "言えない":["zQqb0hBhfJM",4827266],
+    "僕らはいきものだから":["h5uP8eqKah8",3996396],
+    "馬鹿の一つ覚え":["oowSgjv49vk",3978910],
+    "PLAYER 1":["KWV3V1Vjx-Y",6427416],
+    "つづく":["K4qa3zmNY7A",1719480],
+    "My Answer":["9TQ0G7NptM0",3819891]};
+})();

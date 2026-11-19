@@ -14,6 +14,10 @@
   const OM = '大森元貴', WK = '若井滉斗', FJ = '藤澤涼架';
   const q = (ko, ja, en) => ({ ko, ja, en });
 
+  // 팬 퀴즈 탭 이름과 팬 이름 (만점 문구에 쓴다)
+  ARTISTS.find((a) => a.id === 'mga').quizName = { ko: "JAM'S 퀴즈", ja: "JAM'Sクイズ", en: "JAM'S Quiz" };
+  ARTISTS.find((a) => a.id === 'mga').fanName = "JAM'S";
+
   // 한국어 화면에서 한자 · 가나 옆에 붙이는 한글 읽기 (곡 제목은 곡 목록의 한글 표기를 쓴다). 이름 읽기는 일본어 위키백과 기준
   ARTISTS.find((a) => a.id === 'mga').readings = {
     '大森元貴': '오모리 모토키', '若井滉斗': '와카이 히로토', '藤澤涼架': '후지사와 료카',

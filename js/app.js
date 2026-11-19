@@ -128,7 +128,11 @@
     $('#quizView').hidden = mode !== 'quiz';
     $('#lsView').hidden = mode !== 'listen';
     $('#tvView').hidden = mode !== 'trivia';
-    $$('#tabs a').forEach((a) => { if (a.dataset.mode === 'trivia') a.hidden = !(A.trivia && A.trivia.length); });
+    // 데이터가 없는 모드는 탭을 숨기고, 그 주소로 오면 힌트 퀴즈로
+    const hasMode = { trivia: !!(A.trivia && A.trivia.length), listen: !!(A.clips && Object.keys(A.clips).length) };
+    $$('#tabs a').forEach((a) => { if (a.dataset.mode in hasMode) a.hidden = !hasMode[a.dataset.mode]; });
+    if (mode in hasMode && !hasMode[mode]) { location.hash = `#/${A.id}/quiz`; return; }
+    syncQuizTab();
     $('#udView').hidden = mode !== 'updown';
     $('#cupView').hidden = mode !== 'cup';
     if (mode === 'listen') { if (!L || L.artist !== A.id) newListen(); else renderListen(); }
@@ -137,6 +141,9 @@
     else if (mode === 'cup') cupSetup();
     else if (!Q || Q.artist !== A.id) newQuiz(); else renderQuiz();
   }
+  // 팬 퀴즈 탭 이름은 가수마다 (미세스는 JAM'S 퀴즈)
+  const quizName = () => (A && A.quizName ? A.quizName[I18N.lang] || A.quizName.ko : T('팬 퀴즈'));
+  const syncQuizTab = () => { const t = $('#tabs a[data-mode=trivia]'); if (t && A) t.textContent = quizName(); };
   function stopAllVideo() {
     clearMedia();
     if (typeof lsStop === 'function') lsStop();
@@ -502,20 +509,23 @@
     const r = V.score / V.list.length;
     $('#tvEndIcon').textContent = r === 1 ? '👑' : r >= 0.7 ? '🍏' : '🌱';
     $('#tvEndTitle').textContent = T('{a} / {b} 정답', { a: V.score, b: V.list.length });
-    $('#tvEndMsg').textContent = T(r === 1 ? '만점! 진짜 JAM\'S 인정이에요' : r >= 0.7 ? '대단해요! 미세스 박사님' : r >= 0.4 ? '좋아요! 조금만 더 알아 가 봐요' : '이제부터 알아 가면 돼요!');
+    $('#tvEndMsg').textContent = r === 1 ? T('만점! 진짜 {fan} 인정이에요', { fan: A.fanName || T('팬') })
+      : r >= 0.7 ? T('대단해요! {name} 박사님', { name: (A.local && A.local[I18N.lang]) || A.name })
+      : T(r >= 0.4 ? '좋아요! 조금만 더 알아 가 봐요' : '이제부터 알아 가면 돼요!');
     if (silent) return;
     sfx(r >= 0.7 ? 'champion' : 'reveal', 0.5);
     if (r >= 0.7) FX.celebrate(r === 1 ? 3 : 2);
   }
   function shareTv() {
-    share(`SONG QUIZ · ${A.name}\n${T("JAM'S 퀴즈")} ${V.score}/${V.list.length} ${'🍏'.repeat(V.score)}${'▫️'.repeat(V.list.length - V.score)}\n${pageUrl()}#/${A.id}/trivia`);
+    share(`SONG QUIZ · ${A.name}\n${quizName()} ${V.score}/${V.list.length} ${'🍏'.repeat(V.score)}${'▫️'.repeat(V.list.length - V.score)}\n${pageUrl()}#/${A.id}/trivia`);
   }
 
   /* =========================================================
    * Up & Down : 발매일 / MV 조회수
    * ========================================================= */
   let U = null; // { kind, a, b, streak, used:Set, busy }
-  const udKind = () => store.get('sq_udkind', 'date');
+  const hasViews = () => !!(A.views && Object.keys(A.views).length);
+  const udKind = () => (hasViews() ? store.get('sq_udkind', 'date') : 'date');
   const udVal = (i) => (U.kind === 'date' ? A.songs[i].d : (A.views[A.songs[i].t] || [])[1]);
   const udPool = () => A.songs.map((s, i) => i).filter((i) => (U.kind === 'date' ? !A.songs[i].dq : A.views && A.views[A.songs[i].t]));
   const udShow = (i) => (U.kind === 'date' ? fmtDate(A.songs[i].d) : fmtViews(udVal(i)));
@@ -552,7 +562,7 @@
     $('.h-date', el).textContent = show ? udShow(i) : '?';
   }
   function renderUd() {
-    $$('#udKind [data-kind]').forEach((b) => b.classList.toggle('on', b.dataset.kind === U.kind));
+    $$('#udKind [data-kind]').forEach((b) => { b.classList.toggle('on', b.dataset.kind === U.kind); if (b.dataset.kind === 'views') b.hidden = !hasViews(); });
     $('#udQ').textContent = T(U.kind === 'date' ? '오른쪽 곡은 왼쪽 곡보다 나중에 나왔을까요(UP), 먼저 나왔을까요(DOWN)?' : '오른쪽 곡의 MV 조회수는 왼쪽보다 많을까요(UP), 적을까요(DOWN)?');
     $('.ud-up').textContent = T(U.kind === 'date' ? '▲ UP · 더 나중' : '▲ UP · 더 많아요');
     $('.ud-down').textContent = T(U.kind === 'date' ? '▼ DOWN · 더 먼저' : '▼ DOWN · 더 적어요');
@@ -765,7 +775,7 @@
   // 언어만 바꾸고 진행 중인 게임은 그대로 다시 그린다
   $$('[data-lang]').forEach((b) => b.addEventListener('click', () => {
     I18N.set(b.dataset.lang);
-    syncMediaChip(); syncSfx();
+    syncMediaChip(); syncSfx(); syncQuizTab();
     if (!A) renderHome();
     else if (mode === 'updown') {
       const shown = $('#hcB').classList.contains('right') || $('#hcB').classList.contains('wrong');
