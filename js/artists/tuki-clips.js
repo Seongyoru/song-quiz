@@ -2,6 +2,6 @@
 /* 자동 생성 (kit/finish.js) : 듣기 퀴즈 구간 [영상 id, 시작, 하이라이트(유튜브 많이 다시 본 구간 · 없으면 길이의 30%), 끝] 과 월드컵 시작 위치 */
 (() => {
   const a = ARTISTS.find((x) => x.id === 'tuki');
-  a.clips = {};
-  a.cupStart = {};
+  a.clips = {"晩餐歌":["oZpYEEcvu5I",0,38,null],"月面着陸計画":["mX9IJ7Urn28",0,45,null],"純恋愛のインゴット":["goCvO7uJhu8",0,45,null],"アイモライモ":["urh7DZp59WU",0,106,null],"マルボロ":["_at-zfqPOqM",0,null,null],"星街の駅で":["EeSKlyhYp9w",0,153,null],"シーソー":["Hmvjp4xw7dA",0,39,null],"サクラキミワタシ":["rpVvPAFaoqM",0,102,null],"地獄恋文":["Tghdn998C8w",0,63,null],"孤独の鯨":["agstsXgsxg4",0,94,null],"一輪花":["B5HD_FSyrWY",0,null,null],"愛の賞味期限":["nmeccuUXs4Q",0,117,null],"騙シ愛":["4_Lc458W1EY",0,45,null],"声命":["ylIJsx_RixY",0,45,null],"ストレンジャーズ":["lo-ocWYNKqk",0,51,null],"ギルティ":["j8iGq4TO5Fg",0,95,null],"最低界隈":["N0zZKq3RCQo",0,89,null],"人生讃歌":["epFQODCxlxA",0,77,null],"コトノハ":["Tu_Zvj-TRFA",0,42,null],"零-zero-":["iWeRglrNu6E",0,196,null],"SOS":["-23SgNWEAvM",0,55,null],"第三惑星":["GGZ9q23P8AI",0,45,null],"バブル":["5ZdJlEYRTMw",0,74,null],"ひゅるりらぱっぱ":["AOfaWrBwo7I",0,125,null]};
+  a.cupStart = {"_l9GO77oKDg":110,"NffeFmn0vvQ":136,"Ej5sYrSf0Ns":138,"f1P0usHs8js":85,"DHoczq3Z_Eg":91,"UjeCaFY_zaU":157,"xiCiieEtjns":127,"jgD5PZ9jKqk":73,"g1C_cGL2MpE":109,"JyvbG-6upJw":47,"3-YUiSxVtAY":74,"4UwNj--7ws4":65,"-O8IC7fV1dc":32,"j_En7zZ-w2o":80,"FeuXjFKPekU":42,"tE8eLIFM9Wo":41,"4_Lc458W1EY":45,"j8iGq4TO5Fg":95,"Tu_Zvj-TRFA":42,"iWeRglrNu6E":196,"GGZ9q23P8AI":45,"5ZdJlEYRTMw":74};
 })();
