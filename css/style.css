@@ -495,3 +495,9 @@ body.big .cup-name b { font-size: 30px; }
 body.big .cup-name.big b { font-size: 40px; }
 body.big .cup-pick { font-size: 20px; padding: 16px; }
 @media (max-width: 700px) { body.big .top, body.big main, body.big .foot { padding-left: 16px; padding-right: 16px; } }
+
+/* 월드컵 : 공연 연도 · 장소 */
+.cup-name .cup-info { font-size: 11.5px; color: var(--muted); }
+.cup-name.big .cup-info { font-size: 14px; }
+body.big .cup-name em { font-size: 17px; }
+body.big .cup-name .cup-info { font-size: 16px; }

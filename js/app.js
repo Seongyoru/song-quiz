@@ -576,7 +576,7 @@
    * ========================================================= */
   let C = null; // { size, round:[entry], next:[entry], i, out:[[entry, place]] }
   function cupEntries() {
-    const list = (A.lives || []).map(([t, id, label]) => ({ t, id, label }));
+    const list = (A.lives || []).map(([t, id, label, year, venue, note]) => ({ t, id, label, year, venue, note }));
     const has = new Set(list.map((e) => e.t));
     Object.entries(A.media || {}).forEach(([t, [id, kind]]) => { if (!has.has(t) && kind === 'mv') list.push({ t, id, label: 'MV' }); });
     return list;
@@ -598,8 +598,10 @@
   }
   const entryName = (e) => {
     const s = A.songs.find((x) => x.t === e.t);
-    return `<b>${esc(e.t)}</b>${s && sub(s) ? `<span class="cup-sub">${esc(sub(s))}</span>` : ''}<em>${esc(e.label)}</em>`;
+    return `<b>${esc(e.t)}</b>${s && sub(s) ? `<span class="cup-sub">${esc(sub(s))}</span>` : ''}<em>${esc(e.label)}</em>${liveInfo(e) ? `<small class="cup-info">${esc(liveInfo(e))}</small>` : ''}`;
   };
+  // 공연 연도 · 장소 · 방송이나 음원 같은 메모
+  const liveInfo = (e) => [e.year, e.venue, e.note && T(e.note)].filter(Boolean).join(' · ');
   function renderMatch() {
     const n = C.round.length;
     const k = C.i / 2 + 1, m = n / 2;
@@ -634,7 +636,7 @@
     $('#cupWinVideo').innerHTML = ytEmbed(e.id, true);
     $('#cupWinName').innerHTML = entryName(e);
     const places = [[e, 1], ...C.out.slice().reverse()];
-    $('#cupRank').innerHTML = places.map(([x, p]) => `<li><i>${esc(T(p === 1 ? '우승' : p === 2 ? '준우승' : '4강'))}</i>${esc(x.t)} <em>${esc(x.label)}</em></li>`).join('');
+    $('#cupRank').innerHTML = places.map(([x, p]) => `<li><i>${esc(T(p === 1 ? '우승' : p === 2 ? '준우승' : '4강'))}</i>${esc(x.t)} <em>${esc(x.label)}${x.year ? ` (${esc(x.year)})` : ''}</em></li>`).join('');
     $('#cupWin').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   function shareCup() {
@@ -704,7 +706,7 @@
     const typing = e.target.closest && e.target.closest('input, select, textarea');
     if (mode === 'updown') {
       if ($('#udBtns').hidden) return;
-      if (e.key === 'ArrowUp') { e.preventDefault(); answerUd('up'); } else if (e.key === 'ArrowDown') { e.preventDefault(); answerUd('down'); }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); answerUd('up'); } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); answerUd('down'); }
       return;
     }
     if (mode === 'trivia') {
