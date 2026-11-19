@@ -347,7 +347,6 @@ body.big .m-cover img { width: 240px; height: 240px; }
 .cup-rank i { flex: none; width: 52px; font-style: normal; font-size: 12px; color: var(--ac); }
 .cup-rank em { font-style: normal; font-size: 12px; color: var(--muted); font-weight: 500; }
 body.big .cup-name b { font-size: 24px; }
-body.big main { width: min(1300px, 100%); }
 @media (max-width: 520px) {
   .cup-pair { grid-template-columns: 1fr; }
   .cup-vs { text-align: center; }
@@ -447,3 +446,52 @@ body.big .ls-sec { font-size: 44px; }
 body.big .tv-q { font-size: 32px; }
 body.big .tv-opt { font-size: 22px; padding: 20px; }
 @media (max-width: 520px) { .tv-opts { grid-template-columns: 1fr; } }
+
+/* ---- 화면 크기 : 기본도 조금 넓게, 크게 보기는 화면을 거의 가득 ---- */
+.top, main, .foot { width: min(920px, 100%); }
+.qa-media, .ls-player, .ls-ctrl, #lsView .q-answer, .cup-video.big { max-width: 880px; }
+.tabs a { font-size: 15px; }
+.hints li { font-size: 17px; }
+.q-input input { font-size: 17px; }
+.tv-q { font-size: 23px; }
+.tv-opt { font-size: 16px; }
+.h-title { font-size: 23px; }
+.hcard { min-height: 190px; }
+
+body.big .top, body.big main, body.big .foot { width: min(1840px, 100%); padding-left: 32px; padding-right: 32px; }
+/* 영상은 가로를 채우되, 세로로 화면을 넘지 않게 */
+body.big .qa-media, body.big .cup-video.big { max-width: min(100%, max(760px, calc((100dvh - 280px) * 16 / 9))); }
+body.big .ls-player, body.big .ls-ctrl, body.big #lsView .q-answer,
+body.big #lsView .q-input, body.big #lsView .q-btns, body.big #lsView .q-wrong, body.big #lsView .q-keys { margin-left: auto; margin-right: auto; max-width: min(100%, max(760px, calc((100dvh - 500px) * 16 / 9))); }
+body.big .tabs a { font-size: 19px; padding: 14px 12px; }
+body.big .q-no { font-size: 30px; }
+body.big .q-score { font-size: 18px; }
+body.big .hints { gap: 12px; }
+body.big .hints li { font-size: 30px; padding: 22px 28px; gap: 18px; }
+body.big .hints li i { width: 50px; height: 50px; font-size: 22px; }
+body.big .q-input input, body.big .q-btns .btn, body.big .q-input .btn { font-size: 23px; padding: 20px 24px; }
+body.big .qa-title { font-size: 30px; }
+body.big .qa-song b { font-size: 64px; }
+body.big .qa-song span { font-size: 20px; }
+body.big .qa-meta { font-size: 20px; max-width: 680px; }
+body.big .qa-next { font-size: 23px; padding: 18px 34px; }
+body.big .btn.big { font-size: 22px; padding: 20px 12px; }
+body.big .ls-desc { font-size: 18px; }
+body.big .ls-sec { font-size: 56px; }
+body.big .ls-msg { font-size: 18px; }
+body.big .tv-q { font-size: 40px; }
+body.big .tv-opt { font-size: 27px; padding: 24px; }
+body.big .tv-opt i { width: 40px; height: 40px; font-size: 18px; }
+body.big .hilo-score b { font-size: 48px; }
+body.big .hilo-q { font-size: 20px; }
+body.big .hcard { min-height: 320px; }
+body.big .hcard .h-thumb { width: min(100%, max(420px, calc((100dvh - 690px) * 16 / 9))); }
+body.big .h-title { font-size: 36px; }
+body.big .h-sub { font-size: 17px; }
+body.big .h-date { font-size: 20px; padding: 8px 18px; }
+body.big .hilo-btns .btn { font-size: 22px; padding: 20px; }
+body.big .cup-round { font-size: 28px; }
+body.big .cup-name b { font-size: 30px; }
+body.big .cup-name.big b { font-size: 40px; }
+body.big .cup-pick { font-size: 20px; padding: 16px; }
+@media (max-width: 700px) { body.big .top, body.big main, body.big .foot { padding-left: 16px; padding-right: 16px; } }
