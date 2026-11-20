@@ -1093,6 +1093,12 @@
     else if (e.key === 'ArrowRight') { e.preventDefault(); newQuiz(); }
     else if (e.key === 'Enter' && Q && Q.state === 'play') { e.preventDefault(); $('#answerInput').focus(); }
   });
+  // 처음부터 : 점수 · 문제 번호 · 나온 곡 · Up & Down 최고 기록을 지우고 새로 시작 (설정 · 방 · 더빙 비밀번호는 그대로)
+  $('#resetBtn').addEventListener('click', () => {
+    if (!window.confirm(T('점수 · 문제 번호 · Up & Down 최고 기록을 모두 지우고 처음부터 시작할까요?'))) return;
+    try { Object.keys(localStorage).filter((k) => /^sq_ud_/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 무시 */ }
+    location.reload();
+  });
   const syncSfx = () => { $('#sfxBtn').textContent = sfxOn() ? '🔊' : '🔇'; $('#sfxBtn').setAttribute('aria-label', T(sfxOn() ? '효과음 끄기' : '효과음 켜기')); };
   $('#sfxBtn').addEventListener('click', () => { store.set('sq_sfx', !sfxOn()); syncSfx(); sfx('hint', 0.45); });
   syncSfx();

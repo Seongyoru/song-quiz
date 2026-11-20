@@ -688,3 +688,8 @@ body.big .seg button { font-size: 21px; padding: 12px 20px; }
 .ly-lock { padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--ac) 8%, #fff); border: 1.5px dashed color-mix(in srgb, var(--ac) 40%, transparent); }
 .ly-lock input { flex: 1; min-width: 160px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; font-size: 15px; }
 #dubLock[hidden] { display: none; }
+
+/* 처음부터 버튼 : 위쪽 가운데 */
+.top { position: relative; }
+.reset-btn { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); white-space: nowrap; font-weight: 800; }
+@media (max-width: 640px) { .reset-btn { position: static; transform: none; order: 3; } .top { flex-wrap: wrap; } }
