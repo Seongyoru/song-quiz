@@ -126,8 +126,10 @@
     document.body.style.setProperty('--ac2', A.color2 || A.color);
     $('#lsLabel').innerHTML = LABELS[A.id] || LABELS._;
     $('#artistName').textContent = A.name;
+    document.body.style.setProperty('--art', A.color);
+    document.body.style.setProperty('--art2', A.color2 || A.color);
     $('#lvl').hidden = !A.normalOut && !A.normalIn;
-    $$('#lvl [data-lvl]').forEach((b) => b.classList.toggle('on', b.dataset.lvl === lvl()));
+    syncLvl();
     $('#lyText').value = store.get(lyKey(), '');
     $$('#tabs a').forEach((a) => { a.href = `#/${A.id}/${a.dataset.mode}`; a.classList.toggle('on', a.dataset.mode === mode); });
     $('#quizView').hidden = mode !== 'quiz';
@@ -158,6 +160,7 @@
   function renderHome() {
     document.body.style.removeProperty('--ac');
     document.body.style.removeProperty('--ac2');
+    document.body.classList.remove('hard', 'normal');
     $('#artistList').innerHTML = ARTISTS.map((x) => `
       <a class="artist" href="#/${x.id}/quiz" style="--ac:${x.color};--ac2:${x.color2 || x.color}">
         <span class="a-name">${esc(x.name)}</span>
@@ -347,6 +350,13 @@
   const lvl = () => store.get('sq_lvl', 'normal');
   // normalIn(일반에 나오는 곡) 이 있으면 그것만, 없으면 normalOut(일반에서 빼는 곡) 을 뺀다
   const inLvl = (i) => lvl() === 'hard' || (A.normalIn ? A.normalIn.includes(A.songs[i].t) : !A.normalOut || !A.normalOut.includes(A.songs[i].t));
+  // 일반 · 하드 화면 : body 에 normal / hard 를 붙여 색과 표시를 바꾼다 (난이도가 있는 가수만)
+  function syncLvl() {
+    const has = !!(A && (A.normalOut || A.normalIn));
+    $$('#lvl [data-lvl]').forEach((x) => x.classList.toggle('on', x.dataset.lvl === lvl()));
+    document.body.classList.toggle('hard', has && lvl() === 'hard');
+    document.body.classList.toggle('normal', has && lvl() === 'normal');
+  }
   const lsPool = () => A.songs.map((s, i) => i).filter((i) => A.clips && A.clips[A.songs[i].t] && inLvl(i));
   const clipOf = (i) => A.clips[A.songs[i].t];
 
@@ -894,7 +904,7 @@
   // 난이도 : 일반 / 하드
   $$('#lvl [data-lvl]').forEach((b) => b.addEventListener('click', () => {
     store.set('sq_lvl', b.dataset.lvl);
-    $$('#lvl [data-lvl]').forEach((x) => x.classList.toggle('on', x === b));
+    syncLvl();
     if (Q) Q.used = new Set();
     if (L) L.used = new Set();
     if (mode === 'quiz') newQuiz(); else if (mode === 'listen') newListen(); else if (mode === 'updown') startUd();

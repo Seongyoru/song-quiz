@@ -613,3 +613,27 @@ body.big .room-bar { bottom: 18px; }
 .lk-win small { display: block; font-weight: 800; color: #c48a0c; font-size: 18px; }
 .lk-win b { display: block; margin-top: 4px; font: 700 clamp(34px, 6vw, 60px)/1.15 var(--fd); word-break: break-all; }
 @media (max-width: 760px) { .lucky { flex-direction: column-reverse; } .lk-side { width: 100%; max-height: 30%; } .lk-stage { height: 65%; } }
+
+/* ---------- 일반 · 하드 화면 차이 ---------- */
+#artistName::after { display: inline-block; vertical-align: middle; margin-left: 10px; padding: 3px 10px; border-radius: 99px; font: 800 12px/1.4 var(--fk); letter-spacing: .5px; }
+body.normal #artistName::after { content: '🌱 NORMAL'; background: color-mix(in srgb, var(--ac) 14%, #fff); color: var(--ac); }
+body.hard #artistName::after { content: '🔥 HARD'; background: linear-gradient(90deg, #e0484f, #ff8a3d); color: #fff; box-shadow: 0 4px 14px rgba(224, 72, 79, .35); }
+/* 하드 : 화면 전체를 붉은 톤으로, 포인트 색을 빨강 · 주황으로 (레코드판은 가수 색 그대로) */
+body.hard {
+  background:
+    radial-gradient(900px 500px at 0% -10%, rgba(255, 138, 61, .22), transparent 70%),
+    radial-gradient(800px 500px at 110% 10%, rgba(224, 72, 79, .2), transparent 70%),
+    #fff6f3;
+}
+body.hard #game { --ac: #e0484f; --ac2: #ff8a3d; }
+body.hard #game .ls-cover { --ac: var(--art); --ac2: var(--art2); }
+body.hard .tabs { border-color: rgba(224, 72, 79, .35); box-shadow: 0 6px 20px rgba(224, 72, 79, .12); }
+body.hard .tabs a.on { background: linear-gradient(90deg, #e0484f, #ff6a3d); }
+body.hard #game .panel { position: relative; }
+body.hard .hints li { border-color: rgba(224, 72, 79, .28); }
+body.hard .hints li i { background: #e0484f; color: #fff; }
+body.hard .q-input input, body.hard .ls-player, body.hard .hcard { box-shadow: 0 0 0 2px rgba(224, 72, 79, .35); }
+body.hard .ls-player { box-shadow: 0 0 0 3px #e0484f, 0 12px 40px rgba(224, 72, 79, .3); }
+body.hard .lvl { border-color: rgba(224, 72, 79, .45); }
+/* 일반 : 지금 그대로, 살짝 부드럽게 */
+body.normal .ls-player { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 30%, transparent); }
