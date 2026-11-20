@@ -27,6 +27,9 @@ const ROOM = (() => {
   let client = null, role = null, code = '', S = null, connected = false;
   // 출제자 상태
   const blank = () => ({ open: false, locked: null, blocked: [], round: 0, players: {} });
+  // 럭키드로우 구슬 : 들어오면 3개, 정답을 맞히면 출제자가 1개씩 더 준다
+  const MARBLES = 3;
+  const mOf = (p) => (p.marbles != null ? p.marbles : MARBLES);
 
   async function connect(onMsg, subs) {
     await loadScript(MQTT_JS);
@@ -54,8 +57,8 @@ const ROOM = (() => {
   const newCode = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
   function pub() {
     if (!client || role !== 'host') return;
-    const players = Object.entries(S.players).map(([id, p]) => ({ id, name: p.name, score: p.score }));
-    client.publish(topic(code, 'host'), JSON.stringify({ t: 'state', open: S.open, locked: S.locked, blocked: S.blocked, round: S.round, players }), { qos: 1, retain: true });
+    const players = Object.entries(S.players).map(([id, p]) => ({ id, name: p.name, score: p.score, marbles: mOf(p) }));
+    client.publish(topic(code, 'host'), JSON.stringify({ t: 'state', open: S.open, locked: S.locked, blocked: S.blocked, round: S.round, players, drawing: !!S.drawing, draw: S.draw || null }), { qos: 1, retain: true });
     store.set('sq_room_host', { code, S });
     render();
   }
@@ -64,7 +67,8 @@ const ROOM = (() => {
     if (m.t === 'join' && m.id) {
       const name = String(m.name || '').slice(0, 16) || '?';
       const isNew = !S.players[m.id];
-      S.players[m.id] = { name, score: S.players[m.id] ? S.players[m.id].score : 0 };
+      const prev = S.players[m.id];
+      S.players[m.id] = { name, score: prev ? prev.score : 0, marbles: prev && prev.marbles != null ? prev.marbles : MARBLES };
       pub();
       if (isNew) toastBig(`👋 ${name}`, 1200);
     } else if (m.t === 'buzz' && m.id && S.players[m.id]) {
@@ -91,7 +95,7 @@ const ROOM = (() => {
     if (role !== 'host' || !S.locked) return;
     const p = S.players[S.locked.id];
     if (ok) {
-      if (p) p.score += 1;
+      if (p) { p.score += 1; p.marbles = mOf(p) + 1; }
       S.locked = null; S.open = false;
       hideBig();
       pub();
@@ -103,6 +107,17 @@ const ROOM = (() => {
       hideBig();
       pub();
     }
+  }
+  function lucky() {
+    if (role !== 'host' || S.drawing) return;
+    const people = Object.entries(S.players).map(([id, p]) => ({ id, name: p.name, count: mOf(p) })).filter((p) => p.count > 0);
+    if (!people.length) { alert(T('구슬을 가진 참가자가 없어요')); return; }
+    if (typeof LUCKY === 'undefined') return;
+    S.drawing = true; S.open = false; S.locked = null; hideBig(); pub();
+    closeDlg();
+    if (window.SQ) window.SQ.stop();
+    LUCKY.run(people, (w) => { S.drawing = false; S.draw = { id: w.id, name: w.name, n: (S.draw ? S.draw.n : 0) + 1 }; pub(); })
+      .catch(() => { S.drawing = false; pub(); alert(T('럭키드로우를 불러오지 못했어요. 인터넷 연결을 확인해 주세요')); });
   }
   function newRound() { if (role !== 'host') return; S.round += 1; S.open = true; S.locked = null; S.blocked = []; hideBig(); pub(); }
   function closeRound() { if (role !== 'host' || (!S.open && !S.locked)) return; S.open = false; S.locked = null; hideBig(); pub(); }
@@ -121,6 +136,7 @@ const ROOM = (() => {
         if (tp === topic(code, 'host')) {
           const was = P;
           P = m && m.t === 'state' ? m : null;
+          if (P && P.draw && P.draw.id === myId && !P.drawing && !(was && was.draw && was.draw.n === P.draw.n)) { try { navigator.vibrate && navigator.vibrate([100, 60, 100, 60, 300]); } catch (e) { /* 무시 */ } sfx('champion', 0.6); }
           if (P && P.locked && P.locked.id === myId && !(was && was.locked && was.locked.id === myId)) { try { navigator.vibrate && navigator.vibrate([80, 40, 160]); } catch (e) { /* 무시 */ } sfx('correct', 0.5); }
           render();
         }
@@ -194,7 +210,11 @@ const ROOM = (() => {
       else if (P && P.open) { cls = 'ready'; msg = T('들리면 누르세요!'); }
       else if (P) msg = T('다음 문제를 기다리는 중...');
       $('#rpName').textContent = `${myName} · ${T('방')} ${code}`;
-      $('#rpScore').textContent = T('{n}점', { n: me ? me.score : 0 });
+      $('#rpScore').textContent = `${T('{n}점', { n: me ? me.score : 0 })} · 🔮 ${me ? me.marbles : MARBLES}`;
+      const d = P && P.draw;
+      $('#rpDraw').hidden = !(P && (P.drawing || d));
+      $('#rpDraw').className = `rp-draw ${d && d.id === myId && !P.drawing ? 'me' : ''}`;
+      $('#rpDraw').textContent = P && P.drawing ? T('🎰 럭키드로우 진행 중...') : d ? (d.id === myId ? T('🎉 럭키드로우 당첨! 축하해요!') : T('🎉 럭키드로우 당첨 : {name}', { name: d.name })) : '';
       $('#rpBuzz').className = `rp-buzz ${cls}`;
       $('#rpBuzz').disabled = cls !== 'ready';
       $('#rpMsg').textContent = msg;
@@ -207,9 +227,12 @@ const ROOM = (() => {
         <div class="room-join"><div class="room-qr" id="roomQr" data-code=""></div>
           <div><p>${esc(T('휴대폰으로 QR을 찍거나 주소에 들어가서 방 코드를 넣어 주세요'))}</p>
           <button type="button" class="chip" data-act="copy">${esc(T('참가 링크 복사'))}</button></div></div>
-        <ol class="room-list">${list.map((p) => `<li><span>${esc(p.name)}</span><b>${p.score}</b><button type="button" class="chip" data-act="minus" data-id="${esc(p.id)}">−</button><button type="button" class="chip" data-act="plus" data-id="${esc(p.id)}">+</button></li>`).join('') || `<li class="empty">${esc(T('아직 들어온 사람이 없어요'))}</li>`}</ol>
-        <p class="room-note">${esc(T('새 문제를 내면 버저가 자동으로 열려요. 먼저 누른 사람이 화면에 크게 뜨면 정답 · 오답을 눌러 주세요. 오답이면 그 사람만 빼고 다시 누를 수 있어요.'))}</p>
-        <div class="room-btns"><button type="button" class="btn" data-act="reset">${esc(T('점수 초기화'))}</button><button type="button" class="btn" data-act="close">${esc(T('방 닫기'))}</button></div>`;
+        <ol class="room-list">${list.map((p) => `<li><span>${esc(p.name)}</span>
+          <em>${esc(T('점수'))}</em><button type="button" class="chip" data-act="minus" data-id="${esc(p.id)}">−</button><b>${p.score}</b><button type="button" class="chip" data-act="plus" data-id="${esc(p.id)}">+</button>
+          <em>🔮</em><button type="button" class="chip" data-act="mminus" data-id="${esc(p.id)}">−</button><b>${mOf(p)}</b><button type="button" class="chip" data-act="mplus" data-id="${esc(p.id)}">+</button></li>`).join('') || `<li class="empty">${esc(T('아직 들어온 사람이 없어요'))}</li>`}</ol>
+        ${S.draw ? `<p class="room-draw">${esc(T('🎉 지난 럭키드로우 당첨 : {name}', { name: S.draw.name }))}</p>` : ''}
+        <p class="room-note">${esc(T('새 문제를 내면 버저가 자동으로 열려요. 먼저 누른 사람이 화면에 크게 뜨면 정답 · 오답을 눌러 주세요. 오답이면 그 사람만 빼고 다시 누를 수 있어요.'))}<br>${esc(T('들어오면 구슬 3개를 받고, 정답을 맞히면 구슬이 1개씩 늘어요. 럭키드로우는 모든 구슬을 핀볼판에 떨어뜨려 맨 먼저 출구를 통과한 구슬의 주인이 당첨이에요.'))}</p>
+        <div class="room-btns"><button type="button" class="btn main" data-act="lucky">${esc(T('🎰 럭키드로우'))}</button><button type="button" class="btn" data-act="mreset">${esc(T('구슬 모두 3개로'))}</button><button type="button" class="btn" data-act="reset">${esc(T('점수 초기화'))}</button><button type="button" class="btn" data-act="close">${esc(T('방 닫기'))}</button></div>`;
       drawQr();
     } else if (role === 'player') {
       dlg.innerHTML = `<p>${esc(T('{code} 방에 들어와 있어요', { code }))}</p><div class="room-btns"><button type="button" class="btn" data-act="leave">${esc(T('방 나가기'))}</button></div>`;
@@ -244,6 +267,9 @@ const ROOM = (() => {
     } else if (a === 'copy') { navigator.clipboard.writeText(joinUrl(code)).then(() => toastBig(T('복사했어요'), 900)).catch(() => window.prompt('', joinUrl(code))); }
     else if (a === 'plus' || a === 'minus') { const p = S.players[b.dataset.id]; if (p) { p.score += a === 'plus' ? 1 : -1; pub(); } }
     else if (a === 'reset') { Object.values(S.players).forEach((p) => { p.score = 0; }); pub(); }
+    else if (a === 'mplus' || a === 'mminus') { const p = S.players[b.dataset.id]; if (p) { p.marbles = Math.max(0, mOf(p) + (a === 'mplus' ? 1 : -1)); pub(); } }
+    else if (a === 'mreset') { Object.values(S.players).forEach((p) => { p.marbles = MARBLES; }); pub(); }
+    else if (a === 'lucky') lucky();
     else if (a === 'close') { if (confirm(T('방을 닫을까요? 참가자 연결이 모두 끊겨요'))) { leave(false); closeDlg(); } }
     else if (a === 'leave') { leave(false); closeDlg(); if (/^#\/join\//.test(location.hash)) location.hash = '#/'; }
   }
@@ -257,6 +283,7 @@ const ROOM = (() => {
         <div class="rp-top"><span id="rpName"></span><b id="rpScore"></b></div>
         <button type="button" class="rp-buzz wait" id="rpBuzz">BUZZ</button>
         <p class="rp-msg" id="rpMsg"></p>
+        <p class="rp-draw" id="rpDraw" hidden></p>
         <ol class="rp-rank" id="rpRank"></ol>
         <button type="button" class="chip rp-leave" data-act="leave">${esc(T('방 나가기'))}</button>
       </div>`);
