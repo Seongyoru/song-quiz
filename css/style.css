@@ -512,3 +512,80 @@ body.big .cup-name .cup-info { font-size: 16px; }
 .tv-read { font-size: .72em; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .tv-opt.right .tv-read, .tv-opt.wrong .tv-read { color: rgba(255, 255, 255, .85); }
 .tv-q .tv-read { font-size: .62em; margin-left: 1px; }
+
+/* ---------- 난이도 : 일반 / 하드 ---------- */
+.lvl { display: flex; padding: 3px; margin-left: auto; border-radius: 99px; background: #fff; border: 1.5px solid var(--line); align-self: center; }
+.lvl button { padding: 6px 16px; border-radius: 99px; font-size: 13px; font-weight: 800; color: var(--ink2); }
+.lvl button.on { background: var(--ac); color: #fff; }
+.lvl button[data-lvl="hard"].on { background: #e0484f; }
+#lsKind { flex-wrap: wrap; }
+
+/* ---------- 듣기 퀴즈 : 동시 재생 · 리버스 · 가사 ---------- */
+.ls-yt-x { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.ls-cover.solid .ls-peek { display: none; }
+.ls-extra { max-width: 720px; margin: 10px auto 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; }
+.ls-extra label.btn { cursor: pointer; }
+.ls-extra-note { color: var(--ink2); font-size: 12px; line-height: 1.6; }
+.ls-extra details { width: 100%; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 14px; background: #fff; }
+.ls-extra summary { cursor: pointer; font-weight: 800; }
+.ls-extra textarea { width: 100%; margin-top: 8px; padding: 10px; border: 1.5px solid var(--line); border-radius: 10px; font: 500 13px/1.6 var(--fk); resize: vertical; }
+.ly-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ly-opts select { padding: 6px 10px; border-radius: 99px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; font-size: 12px; }
+.ls-found b { color: var(--ac); }
+.ls-found span { background: color-mix(in srgb, var(--ac) 14%, #fff); color: var(--ink); text-decoration: none; }
+.mix-a { padding: 6px 0; opacity: .55; }
+.mix-a.ok { opacity: 1; }
+.mix-a + .mix-a { border-top: 1px dashed var(--line); }
+.ly-text { display: block; margin-top: 8px; font-size: 14px; color: var(--ink2); white-space: pre-wrap; }
+
+/* ---------- 방 만들기 · 버저 ---------- */
+.room-btn { white-space: nowrap; }
+.room-btn.on { background: #e0484f; border-color: #e0484f; color: #fff; }
+.room-dlg { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(20, 30, 20, .45); }
+.room-box { position: relative; width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 22px; border-radius: 22px; background: #fff; box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
+.room-box h3 { font: 700 20px var(--fd); margin-bottom: 12px; }
+.room-x { position: absolute; right: 14px; top: 12px; font-size: 18px; color: var(--ink2); }
+.room-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .room-pick { grid-template-columns: 1fr; } }
+.room-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1.5px solid var(--line); border-radius: 16px; }
+.room-card h4 { font-weight: 800; }
+.room-card p { font-size: 13px; color: var(--ink2); line-height: 1.6; flex: 1; }
+.room-card input { padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; font-size: 15px; font-weight: 700; }
+#roomCodeIn { text-transform: uppercase; letter-spacing: 4px; }
+.room-code { font: 700 56px/1 var(--fd); letter-spacing: 10px; text-align: center; color: var(--ac, #3fae3a); margin: 6px 0 12px; }
+.room-join { display: flex; gap: 14px; align-items: center; font-size: 13px; color: var(--ink2); line-height: 1.6; }
+.room-join p { margin-bottom: 8px; }
+.room-qr { flex: none; width: 140px; height: 140px; }
+.room-qr svg { width: 100%; height: 100%; }
+.room-list { margin: 14px 0; display: grid; gap: 6px; }
+.room-list li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: #f6f7f4; font-weight: 700; }
+.room-list li span { flex: 1; }
+.room-list li b { font: 700 18px var(--fd); min-width: 28px; text-align: right; }
+.room-list li.empty { color: var(--ink2); font-weight: 500; }
+.room-note { font-size: 12px; color: var(--ink2); line-height: 1.6; margin-top: 10px; }
+.room-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.room-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 99px; background: #fff; box-shadow: 0 8px 30px rgba(0, 0, 0, .18); border: 1.5px solid var(--line); max-width: calc(100% - 20px); }
+.room-bar .btn { padding: 8px 14px; font-size: 13px; }
+.rb-code { font-size: 13px; font-weight: 700; white-space: nowrap; padding: 4px 8px; }
+.rb-code b { font-family: var(--fd); letter-spacing: 2px; }
+.rb-status { font-size: 13px; font-weight: 800; color: var(--ink2); white-space: nowrap; }
+.rb-status.open { color: #2f9e44; }
+.rb-status.hot { color: #e0484f; font-size: 15px; }
+.room-big { position: fixed; inset: 0; z-index: 55; display: grid; place-items: center; padding: 20px; background: rgba(255, 255, 255, .55); font: 700 clamp(48px, 11vw, 140px)/1.1 var(--fd); color: #e0484f; text-align: center; text-shadow: 0 6px 30px rgba(224, 72, 79, .35); animation: pop .35s cubic-bezier(.3, 1.4, .5, 1); pointer-events: auto; }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } }
+.room-play { position: fixed; inset: 0; z-index: 58; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); background: #fbfcf8; overflow: auto; }
+.rp-top { width: 100%; max-width: 480px; display: flex; justify-content: space-between; font-weight: 800; }
+.rp-top b { font: 700 22px var(--fd); color: #3fae3a; }
+.rp-buzz { width: min(78vw, 360px); aspect-ratio: 1; border-radius: 50%; font: 700 clamp(36px, 10vw, 56px) var(--fd); color: #fff; background: #c9cec6; box-shadow: 0 12px 0 #a5aaa2, 0 20px 40px rgba(0, 0, 0, .15); touch-action: manipulation; user-select: none; -webkit-user-select: none; transition: transform .06s, box-shadow .06s; }
+.rp-buzz.ready { background: #e0484f; box-shadow: 0 12px 0 #a8262c, 0 20px 40px rgba(224, 72, 79, .35); }
+.rp-buzz.ready:active { transform: translateY(10px); box-shadow: 0 2px 0 #a8262c; }
+.rp-buzz.sent { background: #f08a8f; box-shadow: 0 4px 0 #c45a5f; transform: translateY(8px); }
+.rp-buzz.mine { background: #f5b82e; box-shadow: 0 12px 0 #c48a0c, 0 0 0 14px rgba(245, 184, 46, .3); animation: pop .4s; }
+.rp-msg { font-size: 20px; font-weight: 800; text-align: center; min-height: 1.4em; }
+.rp-rank { width: 100%; max-width: 360px; display: grid; gap: 4px; }
+.rp-rank li { display: flex; gap: 10px; padding: 6px 12px; border-radius: 10px; background: #fff; font-weight: 700; }
+.rp-rank li i { color: var(--ink2); font-style: normal; width: 18px; }
+.rp-rank li b { margin-left: auto; font-family: var(--fd); }
+.rp-rank li.me { background: #eaf7e4; }
+.rp-leave { margin-top: auto; }
+body.big .room-bar { bottom: 18px; }

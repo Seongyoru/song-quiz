@@ -125,6 +125,9 @@
     document.body.style.setProperty('--ac2', A.color2 || A.color);
     $('#lsLabel').innerHTML = LABELS[A.id] || LABELS._;
     $('#artistName').textContent = A.name;
+    $('#lvl').hidden = !A.normalOut;
+    $$('#lvl [data-lvl]').forEach((b) => b.classList.toggle('on', b.dataset.lvl === lvl()));
+    $('#lyText').value = store.get(lyKey(), '');
     $$('#tabs a').forEach((a) => { a.href = `#/${A.id}/${a.dataset.mode}`; a.classList.toggle('on', a.dataset.mode === mode); });
     $('#quizView').hidden = mode !== 'quiz';
     $('#lsView').hidden = mode !== 'listen';
@@ -167,7 +170,7 @@
    * ========================================================= */
   let Q = null; // { artist, no, song, shown, wrong:[], state:'play'|'right'|'reveal', used:Set, score, total }
   const range = () => $('#qRange').value;
-  const poolOf = () => A.songs.map((s, i) => i).filter((i) => range() === 'all' || ['single', 'digital'].includes(A.songs[i].type));
+  const poolOf = () => A.songs.map((s, i) => i).filter((i) => inLvl(i) && (range() === 'all' || ['single', 'digital'].includes(A.songs[i].type)));
 
   function newQuiz() {
     const keep = Q && Q.artist === A.id ? Q : null;
@@ -184,6 +187,7 @@
     $('#answerInput').value = '';
     renderQuiz();
     $$('#hints li').forEach((li) => li.classList.add('new'));
+    if (window.ROOM) window.ROOM.newRound();
     if (window.scrollY > $('#quizView').offsetTop) $('#quizView').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   function renderQuiz() {
@@ -229,6 +233,7 @@
     Q.state = state; Q.total += 1;
     if (state === 'right') Q.score += 1;
     sfx(state === 'right' ? 'correct' : 'reveal');
+    if (window.ROOM) window.ROOM.closeRound();
     // 힌트를 적게 쓰고 맞힐수록 크게 축하
     if (state === 'right') FX.celebrate(Q.shown <= 3 ? 3 : Q.shown <= 6 ? 2 : 1);
     renderQuiz();
@@ -291,128 +296,252 @@
   }
 
   /* =========================================================
-   * 듣기 퀴즈 : 인트로 · 배속(하이라이트) · 아웃트로
-   *  유튜브 플레이어를 가리개로 덮고 정해진 구간만 들려준다. 3초 → 6초 → … 15초까지 늘릴 수 있다
+   * 듣기 퀴즈
+   *  인트로 · 배속(하이라이트, 느리게 · 빠르게) · 아웃트로 · 동시 재생(2~3곡) : 유튜브 플레이어를 가리개로 덮고 정해진 구간만 들려준다
+   *  리버스 : 출제자가 고른 음원 파일을 이 브라우저 안에서 거꾸로 튼다
+   *  가사   : 출제자가 적어 둔 가사를 기계 음성이 읽는다
+   *  3초 → 6초 → … 15초까지 늘릴 수 있다
    * ========================================================= */
   const LS_STEP = 3, LS_MAX = 15;
-  let L = null; // { artist, kind, no, song, secs, state, wrong, used:Set, score, total }
-  let yt = null, ytReady = null, lsTimer = 0, lsWatch = 0;
+  let L = null; // { artist, kind, no, song, songs:[], found:Set, item, secs, state, wrong, used:Set, score, total }
+  let ytApi = null, yt = null, lsTimer = 0, lsWatch = 0;
+  const players = {}; // div id → Promise<YT.Player>
   const lsKind = () => store.get('sq_lskind', 'intro');
   const lsRate = () => Number($('#lsRate').value) || 2;
-  function loadYT() {
-    if (ytReady) return ytReady;
-    ytReady = new Promise((ok) => {
-      const make = () => {
-        yt = new YT.Player('lsYt', {
-          width: '100%', height: '100%',
-          playerVars: { controls: 0, disablekb: 1, rel: 0, playsinline: 1, modestbranding: 1, iv_load_policy: 3, fs: 0 },
-          events: { onReady: () => ok(yt) },
-        });
-      };
-      if (window.YT && window.YT.Player) { make(); return; }
-      window.onYouTubeIframeAPIReady = make;
+  const lsMixN = () => Number($('#lsMix').value) || 2;
+  const YT_KINDS = ['intro', 'hl', 'outro', 'mix'];
+  function loadApi() {
+    if (ytApi) return ytApi;
+    ytApi = new Promise((ok) => {
+      if (window.YT && window.YT.Player) { ok(); return; }
+      window.onYouTubeIframeAPIReady = ok;
       const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s);
     });
-    return ytReady;
+    return ytApi;
   }
+  function loadPlayer(el) {
+    if (!players[el]) {
+      players[el] = loadApi().then(() => new Promise((ok) => {
+        const p = new YT.Player(el, {
+          width: '100%', height: '100%',
+          playerVars: { controls: 0, disablekb: 1, rel: 0, playsinline: 1, modestbranding: 1, iv_load_policy: 3, fs: 0 },
+          events: { onReady: () => ok(p) },
+        });
+      }));
+    }
+    return players[el];
+  }
+  const loadYT = () => loadPlayer('lsYt').then((p) => { yt = p; return p; });
+  const MIX_EL = ['lsYt', 'lsYt2', 'lsYt3'];
   function lsStop() {
     clearInterval(lsTimer); clearTimeout(lsWatch);
     $('#lsEq').classList.remove('on');
-    if (yt && yt.pauseVideo) try { yt.pauseVideo(); } catch (e) { /* 무시 */ }
+    MIX_EL.forEach((el) => { if (players[el]) players[el].then((p) => { try { p.pauseVideo(); } catch (e) { /* 무시 */ } }); });
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* 무시 */ }
+    rvStopSrc();
   }
-  const lsPool = () => A.songs.map((s, i) => i).filter((i) => A.clips && A.clips[A.songs[i].t]);
+  // 난이도 : 일반은 아는 사람이 적은 곡을 뺀다 (하드는 전 곡)
+  const lvl = () => store.get('sq_lvl', 'normal');
+  const inLvl = (i) => lvl() === 'hard' || !A.normalOut || !A.normalOut.includes(A.songs[i].t);
+  const lsPool = () => A.songs.map((s, i) => i).filter((i) => A.clips && A.clips[A.songs[i].t] && inLvl(i));
+  const clipOf = (i) => A.clips[A.songs[i].t];
+
+  /* ---------- 가사 Q : 「곡 제목 | 가사」 목록 (가수마다, 이 브라우저에만 저장) ---------- */
+  const lyKey = () => `sq_ly_${A.id}`;
+  function lyItems() {
+    return String(store.get(lyKey(), '')).split('\n').map((line) => {
+      const k = line.search(/[|｜]/);
+      if (k < 0) return null;
+      const title = line.slice(0, k).trim(), text = line.slice(k + 1).trim();
+      if (!title || !text) return null;
+      const song = A.songs.findIndex((s) => answers(s).includes(norm(title)));
+      return { title, text, song };
+    }).filter(Boolean);
+  }
+  function speak(text, done) {
+    if (!window.speechSynthesis) { toast(T('이 브라우저는 읽어 주기를 지원하지 않아요')); done(); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const want = $('#lyVoice').value;
+    const lang = want === 'auto' ? (/[가-힣]/.test(text) ? 'ko-KR' : 'ja-JP') : want;
+    u.lang = lang;
+    const v = speechSynthesis.getVoices().find((x) => x.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2)));
+    if (v) u.voice = v;
+    u.rate = Number($('#lyRate').value) || 1;
+    u.onend = done; u.onerror = done;
+    speechSynthesis.speak(u);
+  }
+
+  /* ---------- 리버스 Q : 출제자가 고른 음원 파일 (올리지 않고 이 브라우저 메모리에서만 쓴다) ---------- */
+  const RV = { files: [], ctx: null, src: null, buf: new Map() };
+  function rvSongOf(name) {
+    const n = norm(name.replace(/\.[^.]+$/, ''));
+    let best = -1, len = 1;
+    A.songs.forEach((s, i) => { const t = norm(s.t); if (t.length > len && n.includes(t)) { best = i; len = t.length; } });
+    return best;
+  }
+  function rvStopSrc() { if (RV.src) { try { RV.src.onended = null; RV.src.stop(); } catch (e) { /* 무시 */ } RV.src = null; } }
+  async function rvBuffer(k) {
+    if (RV.buf.has(k)) return RV.buf.get(k);
+    RV.ctx = RV.ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const b = await RV.ctx.decodeAudioData(await RV.files[k].arrayBuffer());
+    RV.buf.set(k, b);
+    return b;
+  }
+
+  function lsPoolOf(kind) {
+    if (kind === 'lyric') return lyItems().map((_, k) => k);
+    if (kind === 'rev') return RV.files.map((_, k) => k);
+    return lsPool();
+  }
   function newListen() {
     lsStop();
+    const kind = lsKind();
     const keep = L && L.artist === A.id ? L : null;
-    const pool = lsPool();
-    let used = keep ? keep.used : new Set();
-    let fresh = pool.filter((i) => !used.has(i));
-    if (!fresh.length) { used = new Set(); fresh = pool; }
-    const song = fresh[Math.floor(Math.random() * fresh.length)];
-    used.add(song);
-    L = { artist: A.id, kind: lsKind(), no: keep ? keep.no + 1 : 1, song, secs: LS_STEP, state: 'play', wrong: [], used, score: keep ? keep.score : 0, total: keep ? keep.total : 0, played: false };
+    const pool = lsPoolOf(kind);
+    let used = keep && keep.kind === kind ? keep.used : new Set();
+    L = { artist: A.id, kind, no: keep ? keep.no + 1 : 1, song: -1, songs: [], found: new Set(), item: null, secs: LS_STEP, state: 'play', wrong: [], used, score: keep ? keep.score : 0, total: keep ? keep.total : 0, played: false };
     $('#lsInput').value = '';
+    $('#lsMsg').textContent = '';
+    if (!pool.length) { L.empty = true; renderListen(); return; }
+    let fresh = pool.filter((i) => !used.has(i));
+    const n = kind === 'mix' ? Math.min(lsMixN(), pool.length) : 1;
+    if (fresh.length < n) { used = new Set(); L.used = used; fresh = pool; }
+    const pick = shuffle(fresh).slice(0, n);
+    pick.forEach((i) => used.add(i));
+    if (kind === 'lyric') { L.item = lyItems()[pick[0]]; L.song = L.item.song; } else if (kind === 'rev') { L.file = pick[0]; L.song = rvSongOf(RV.files[pick[0]].name); L.anchor = null; } else { L.songs = pick; L.song = pick[0]; }
     renderListen();
-    loadYT().then((p) => { if (L && L.song === song) p.cueVideoById(A.clips[A.songs[song].t][0]); });
+    if (kind === 'mix') L.songs.forEach((i, k) => loadPlayer(MIX_EL[k]).then((p) => { if (L && L.songs[k] === i) p.cueVideoById(clipOf(i)[0]); }));
+    else if (YT_KINDS.includes(kind)) loadYT().then((p) => { if (L && L.song === pick[0]) p.cueVideoById(clipOf(pick[0])[0]); });
+    if (window.ROOM) window.ROOM.newRound();
   }
+  const songLine = (s) => `<b>${esc(s.t)}</b><span>${esc([s.ko, s.en !== s.t ? s.en : ''].filter(Boolean).join(' · '))}</span>`;
+  const LS_DESC = {
+    intro: '곡의 처음 부분을 들려줘요', hl: '하이라이트를 배속으로 들려줘요 (느리게 · 빠르게)', outro: '곡의 마지막 부분을 들려줘요',
+    mix: '여러 곡의 하이라이트를 한꺼번에 틀어요. 들리는 곡을 하나씩 맞혀 보세요', rev: '음원을 거꾸로 틀어요', lyric: '가사를 기계 음성이 그대로 읽어 줘요',
+  };
   function renderListen() {
     const done = L.state !== 'play';
+    const yk = YT_KINDS.includes(L.kind);
     $$('#lsKind [data-kind]').forEach((b) => b.classList.toggle('on', b.dataset.kind === L.kind));
     $('#lsRate').hidden = L.kind !== 'hl';
+    $('#lsMix').hidden = L.kind !== 'mix';
+    $('#rvBox').hidden = L.kind !== 'rev';
+    $('#lyBox').hidden = L.kind !== 'lyric';
+    $('#rvNote').textContent = RV.files.length ? T('파일 {n}개 · 파일은 이 브라우저 안에서만 쓰고 어디에도 올리지 않아요', { n: RV.files.length }) : T('파일은 이 브라우저 안에서만 쓰고 어디에도 올리지 않아요');
+    if (L.kind === 'lyric') $('#lyNote').textContent = T('가사 {n}개', { n: lyItems().length });
     $('#lsNo').textContent = T('{n}번째 문제', { n: L.no });
     $('#lsScore').textContent = L.total ? T('맞힌 문제 {a} / {b}', { a: L.score, b: L.total }) : '';
-    $('#lsDesc').textContent = T({ intro: '곡의 처음 부분을 들려줘요', hl: '하이라이트를 빠르게 들려줘요', outro: '곡의 마지막 부분을 들려줘요' }[L.kind]);
-    $('#lsPlay').textContent = T('▶ {n}초 듣기', { n: L.secs });
+    $('#lsDesc').textContent = T(LS_DESC[L.kind]);
+    $('#lsPlay').textContent = L.kind === 'lyric' ? T('▶ 읽어 주기') : T('▶ {n}초 듣기', { n: L.secs });
+    $('#lsPlay').disabled = !!L.empty;
+    $('#lsMore').hidden = L.kind === 'lyric';
     $('#lsMore').textContent = T('+{n}초 더 듣기', { n: LS_STEP });
-    $('#lsMore').disabled = done || L.secs >= LS_MAX;
-    $('#lsSec').textContent = done ? '' : `${L.secs}${T('초')}`;
+    $('#lsMore').disabled = done || L.secs >= LS_MAX || !!L.empty;
+    $('#lsSec').textContent = done ? '' : L.empty ? '' : L.kind === 'lyric' ? T('가사') : L.kind === 'mix' ? `${L.songs.length}${T('곡')} · ${L.secs}${T('초')}` : `${L.secs}${T('초')}`;
+    if (L.empty) $('#lsMsg').textContent = T(L.kind === 'lyric' ? '「가사 목록 편집」에 가사를 먼저 적어 주세요' : L.kind === 'rev' ? '음원 파일을 먼저 골라 주세요' : '이 난이도에는 들을 수 있는 곡이 없어요');
     $('#lsCover').hidden = done;
+    $('#lsCover').classList.toggle('solid', !yk);
     $('#lsCtrl').hidden = done;
-    $('#lsInputBox').hidden = done;
-    $('#lsReveal').hidden = done;
+    $('#lsInputBox').hidden = done || !!L.empty;
+    $('#lsReveal').hidden = done || !!L.empty;
     $('#lsWrong').hidden = !L.wrong.length;
     $('#lsWrong').innerHTML = `<b>${esc(T('아니에요'))}</b> ${L.wrong.map((w) => `<span>${esc(w)}</span>`).join('')}`;
+    $('#lsFound').hidden = L.kind !== 'mix' || done || !L.found.size;
+    $('#lsFound').innerHTML = `<b>${esc(T('맞힌 곡 {a} / {b}', { a: L.found.size, b: L.songs.length }))}</b> ${[...L.found].map((i) => `<span>${esc(A.songs[i].t)}</span>`).join('')}`;
     $('#lsAnswer').hidden = !done;
     if (done) {
-      const s = A.songs[L.song];
       $('#lsAnswer').className = `q-answer ${L.state}`;
-      $('#lsaTitle').textContent = L.state === 'right' ? T('정답! {n}초 만에 맞혔어요', { n: L.secs }) : T('정답은 이 곡이에요');
-      $('#lsaSong').innerHTML = `<b>${esc(s.t)}</b><span>${esc([s.ko, s.en !== s.t ? s.en : ''].filter(Boolean).join(' · '))}</span>`;
+      $('#lsaTitle').textContent = L.state === 'right' ? (L.kind === 'lyric' ? T('정답!') : T('정답! {n}초 만에 맞혔어요', { n: L.secs })) : T('정답은 이 곡이에요');
+      if (L.kind === 'mix') $('#lsaSong').innerHTML = L.songs.map((i) => `<div class="mix-a ${L.found.has(i) ? 'ok' : ''}">${songLine(A.songs[i])}</div>`).join('');
+      else if (L.song >= 0) $('#lsaSong').innerHTML = songLine(A.songs[L.song]) + (L.kind === 'lyric' ? `<span class="ly-text">${esc(L.item.text)}</span>` : '');
+      else $('#lsaSong').innerHTML = `<b>${esc(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))}</b>${L.kind === 'lyric' ? `<span class="ly-text">${esc(L.item.text)}</span>` : ''}`;
     }
   }
   // 지금 문제의 들려줄 구간 [시작, 끝] (영상 시간, 초)
-  function lsSegment() {
-    const [, o, hl, e] = A.clips[A.songs[L.song].t];
-    const dur = yt.getDuration() || 0;
+  function lsSegment(p, i) {
+    const [, o, hl, e] = clipOf(i);
+    const dur = p.getDuration() || 0;
     if (L.kind === 'intro') return [o, o + L.secs];
     if (L.kind === 'hl') { const st = hl != null ? hl : dur * 0.3; return [st, st + L.secs * lsRate()]; }
+    if (L.kind === 'mix') { const st = hl != null ? hl : dur * 0.3; return [st, st + L.secs]; }
     const end = e != null ? e : Math.max(0, dur - 1.2);
     return [Math.max(0, end - L.secs), end];
   }
   async function lsPlay() {
-    if (!L || L.state !== 'play') return;
-    const p = await loadYT();
+    if (!L || L.state !== 'play' || L.empty) return;
+    if (L.kind === 'lyric') { lyPlay(); return; }
+    if (L.kind === 'rev') { rvPlay(); return; }
+    const ids = L.kind === 'mix' ? L.songs : [L.song];
+    const ps = await Promise.all(ids.map((_, k) => loadPlayer(MIX_EL[k])));
+    yt = ps[0];
     lsStop();
     $('#lsMsg').textContent = T('불러오는 중...');
-    p.mute();
-    p.playVideo(); // 길이를 알기 위해 먼저 한 번 재생
+    // 플레이어마다 : 길이를 알기 위해 소리 없이 재생 → 구간 시작으로 이동 → 시작점에서 재생되는 걸 확인하면 준비 완료
+    const st = ps.map((p, k) => ({ p, want: clipOf(ids[k])[0], i: ids[k], seg: null, seekAt: 0, ok: false }));
+    st.forEach((x) => { x.p.mute(); x.p.playVideo(); });
     const t0 = performance.now();
-    const wantId = A.clips[A.songs[L.song].t][0];
-    let seg = null, seekAt = 0, armedAt = 0;
+    let armedAt = 0;
+    const rate = L.kind === 'hl' ? lsRate() : 1;
     lsTimer = setInterval(() => {
-      const st = p.getPlayerState();
       const now = performance.now();
-      const cur = p.getCurrentTime();
-      const isOurs = ((p.getVideoData && p.getVideoData()) || {}).video_id === wantId;
-      if (!seg) {
-        // 광고 · 버퍼링 중이면 기다린다. 우리 영상이 재생되고 길이를 알게 되면 구간으로 이동
-        if (st === 1 && isOurs && p.getDuration() > 0) {
-          seg = lsSegment();
-          p.setPlaybackRate(L.kind === 'hl' ? lsRate() : 1);
-          p.seekTo(seg[0], true);
-          seekAt = now;
-        } else if (now - t0 > 3500) {
-          $('#lsMsg').textContent = T('광고가 나오는 중일 수 있어요. 가리개를 열고 건너뛰기를 눌러 주세요');
-        }
-        return;
-      }
       if (!armedAt) {
-        // 이동이 끝나 구간 시작점에서 재생되는 걸 확인한 뒤에 소리를 켜고 시간을 잰다
-        if (st === 1 && Math.abs(cur - seg[0]) < 1.2) {
+        st.forEach((x) => {
+          const s = x.p.getPlayerState(), cur = x.p.getCurrentTime();
+          const ours = ((x.p.getVideoData && x.p.getVideoData()) || {}).video_id === x.want;
+          if (!x.seg) {
+            // 광고 · 버퍼링 중이면 기다린다
+            if (s === 1 && ours && x.p.getDuration() > 0) { x.seg = lsSegment(x.p, x.i); x.p.setPlaybackRate(rate); x.p.seekTo(x.seg[0], true); x.seekAt = now; }
+          } else if (!x.ok) {
+            if (s === 1 && Math.abs(cur - x.seg[0]) < 1.2) { x.ok = true; if (st.length > 1) { x.p.pauseVideo(); x.p.seekTo(x.seg[0], true); } } else if (now - x.seekAt > 2500) { x.p.seekTo(x.seg[0], true); x.seekAt = now; }
+          }
+        });
+        if (st.every((x) => x.ok)) {
+          // 다 준비되면 한꺼번에 소리를 켜고 시간을 잰다
           armedAt = now;
-          p.unMute();
+          st.forEach((x) => { x.p.unMute(); if (st.length > 1) x.p.playVideo(); });
           $('#lsMsg').textContent = '';
           $('#lsEq').classList.add('on');
           L.played = true;
-        } else if (now - seekAt > 2500) { p.seekTo(seg[0], true); seekAt = now; }
+        } else if (now - t0 > 3500) $('#lsMsg').textContent = T('광고가 나오는 중일 수 있어요. 가리개를 열고 건너뛰기를 눌러 주세요');
         return;
       }
-      const limit = ((seg[1] - seg[0]) / (L.kind === 'hl' ? lsRate() : 1)) * 1000 + 1500;
-      if (cur >= seg[1] || st === 0 || now - armedAt > limit) { lsStop(); $('#lsMsg').textContent = ''; }
+      const limit = (L.secs / (L.kind === 'hl' ? 1 : 1)) * 1000 + 1500;
+      const over = st.every((x) => x.p.getCurrentTime() >= x.seg[1] || x.p.getPlayerState() === 0);
+      if (over || now - armedAt > limit) { lsStop(); $('#lsMsg').textContent = ''; }
     }, 60);
   }
+  function lyPlay() {
+    lsStop();
+    $('#lsEq').classList.add('on');
+    L.played = true;
+    speak(L.item.text, () => { if (L && L.kind === 'lyric') $('#lsEq').classList.remove('on'); });
+  }
+  async function rvPlay() {
+    lsStop();
+    $('#lsMsg').textContent = T('불러오는 중...');
+    let b;
+    try { b = await rvBuffer(L.file); } catch (e) { $('#lsMsg').textContent = T('이 파일은 열 수 없어요'); return; }
+    if (!L || L.kind !== 'rev') return;
+    // 거꾸로 틀 기준점 : 곡의 35~70% 사이에서 한 번 정하고, 늘릴 때는 같은 곳에서 더 길게 거슬러 간다
+    if (L.anchor == null) L.anchor = b.duration * (0.35 + Math.random() * 0.35);
+    const sr = b.sampleRate, end = Math.floor(L.anchor * sr), len = Math.min(end, Math.floor(L.secs * sr));
+    const out = RV.ctx.createBuffer(b.numberOfChannels, len, sr);
+    for (let c = 0; c < b.numberOfChannels; c++) {
+      const src = b.getChannelData(c), dst = out.getChannelData(c);
+      for (let j = 0; j < len; j++) dst[j] = src[end - 1 - j];
+    }
+    if (RV.ctx.state === 'suspended') await RV.ctx.resume();
+    const node = RV.ctx.createBufferSource();
+    node.buffer = out; node.connect(RV.ctx.destination);
+    node.onended = () => { if (RV.src === node) { RV.src = null; $('#lsEq').classList.remove('on'); } };
+    RV.src = node; node.start();
+    $('#lsMsg').textContent = '';
+    $('#lsEq').classList.add('on');
+    L.played = true;
+  }
   function lsMore() {
-    if (!L || L.state !== 'play' || L.secs >= LS_MAX) return;
+    if (!L || L.state !== 'play' || L.secs >= LS_MAX || L.empty || L.kind === 'lyric') return;
     L.secs += LS_STEP;
     sfx('hint', 0.4);
     renderListen();
@@ -420,20 +549,44 @@
   }
   function lsFinish(state) {
     L.state = state; L.total += 1;
-    if (state === 'right') { L.score += 1; FX.celebrate(L.secs <= 3 ? 3 : L.secs <= 6 ? 2 : 1); }
+    if (state === 'right') { L.score += 1; FX.celebrate(L.kind === 'lyric' || L.secs <= 3 ? 3 : L.secs <= 6 ? 2 : 1); }
     sfx(state === 'right' ? 'correct' : 'reveal');
     lsStop();
     renderListen();
-    // 가리개를 열고 하이라이트부터 보통 속도로 들려준다
-    const [, o, hl] = A.clips[A.songs[L.song].t];
-    if (yt) { yt.setPlaybackRate(1); yt.unMute(); yt.seekTo(hl != null ? hl : o, true); yt.playVideo(); }
+    if (window.ROOM) window.ROOM.closeRound();
+    // 가리개를 열고 하이라이트부터 보통 속도로 들려준다 (리버스는 같은 곳을 원래 방향으로)
+    if (L.kind === 'rev') {
+      const b = RV.buf.get(L.file);
+      if (b) { const node = RV.ctx.createBufferSource(); node.buffer = b; node.connect(RV.ctx.destination); RV.src = node; node.start(0, Math.max(0, L.anchor - L.secs)); }
+    } else if (L.song >= 0 && A.clips && A.clips[A.songs[L.song].t]) {
+      const [id, o, hl] = clipOf(L.song);
+      loadYT().then((p) => {
+        p.setPlaybackRate(1); p.unMute();
+        if (((p.getVideoData && p.getVideoData()) || {}).video_id !== id) p.loadVideoById(id, hl != null ? hl : o); else { p.seekTo(hl != null ? hl : o, true); p.playVideo(); }
+      });
+    }
     $('#lsView').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   function lsCheck() {
-    if (!L || L.state !== 'play') return;
+    if (!L || L.state !== 'play' || L.empty) return;
     const v = $('#lsInput').value.trim();
     if (!v) { $('#lsInput').focus(); return; }
-    if (answers(A.songs[L.song]).includes(norm(v))) { lsFinish('right'); return; }
+    const n = norm(v);
+    if (L.kind === 'mix') {
+      const hit = L.songs.find((i) => !L.found.has(i) && answers(A.songs[i]).includes(n));
+      if (hit != null) {
+        L.found.add(hit);
+        $('#lsInput').value = '';
+        if (L.found.size === L.songs.length) { lsFinish('right'); return; }
+        sfx('up-right', 0.5);
+        renderListen();
+        $('#lsInput').focus();
+        return;
+      }
+    } else {
+      const ok = L.song >= 0 ? answers(A.songs[L.song]) : [norm(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))];
+      if (ok.includes(n)) { lsFinish('right'); return; }
+    }
     if (!L.wrong.includes(v)) L.wrong.push(v);
     sfx('wrong', 0.5);
     $('#lsInput').value = '';
@@ -528,7 +681,7 @@
   const hasViews = () => !!(A.views && Object.keys(A.views).length);
   const udKind = () => (hasViews() ? store.get('sq_udkind', 'views') : 'date');
   const udVal = (i) => (U.kind === 'date' ? A.songs[i].d : (A.views[A.songs[i].t] || [])[1]);
-  const udPool = () => A.songs.map((s, i) => i).filter((i) => (U.kind === 'date' ? !A.songs[i].dq : A.views && A.views[A.songs[i].t]));
+  const udPool = () => A.songs.map((s, i) => i).filter((i) => inLvl(i) && (U.kind === 'date' ? !A.songs[i].dq : A.views && A.views[A.songs[i].t]));
   const udShow = (i) => (U.kind === 'date' ? fmtDate(A.songs[i].d) : fmtViews(udVal(i)));
   const udThumb = (i) => {
     const t = A.songs[i].t;
@@ -723,6 +876,22 @@
   $('#lsInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); lsCheck(); } });
   $$('#lsKind [data-kind]').forEach((b) => b.addEventListener('click', () => { store.set('sq_lskind', b.dataset.kind); if (L) L.used = new Set(); newListen(); }));
   $('#lsRate').addEventListener('change', () => store.set('sq_lsrate', $('#lsRate').value));
+  $('#lsMix').addEventListener('change', () => { store.set('sq_lsmix', $('#lsMix').value); if (L && L.kind === 'mix') newListen(); });
+  $('#rvFiles').addEventListener('change', (e) => {
+    RV.files = [...e.target.files]; RV.buf.clear();
+    if (L && L.kind === 'rev') { L.used = new Set(); newListen(); }
+  });
+  $('#lyText').addEventListener('input', () => { store.set(lyKey(), $('#lyText').value); if (L && L.kind === 'lyric' && (L.empty || L.state !== 'play')) newListen(); else if (L) renderListen(); });
+  $('#lyVoice').addEventListener('change', () => store.set('sq_lyvoice', $('#lyVoice').value));
+  $('#lyRate').addEventListener('change', () => store.set('sq_lyrate', $('#lyRate').value));
+  // 난이도 : 일반 / 하드
+  $$('#lvl [data-lvl]').forEach((b) => b.addEventListener('click', () => {
+    store.set('sq_lvl', b.dataset.lvl);
+    $$('#lvl [data-lvl]').forEach((x) => x.classList.toggle('on', x === b));
+    if (Q) Q.used = new Set();
+    if (L) L.used = new Set();
+    if (mode === 'quiz') newQuiz(); else if (mode === 'listen') newListen(); else if (mode === 'updown') startUd();
+  }));
   $('#lsBig').addEventListener('click', () => $('#qBig').click());
   // 광고가 나오면 가리개를 잠깐 걷어서 건너뛰기를 누를 수 있게 한다 (6초 뒤 다시 가림)
   let peekT = 0;
@@ -789,10 +958,21 @@
     } else renderQuiz();
   }));
   window.addEventListener('hashchange', route);
+  // 방 · 버저(room.js)에서 부르는 것 : 누가 버저를 누르면 소리를 멈추고, 정답이면 이 문제를 맞힌 걸로
+  window.SQ = {
+    stop() { lsStop(); },
+    right() {
+      if (mode === 'listen' && L && L.state === 'play' && !L.empty) lsFinish('right');
+      else if (mode === 'quiz' && Q && Q.state === 'play') finish('right');
+    },
+  };
 
   I18N.set(I18N.detect());
   $('#qRange').value = store.get('sq_range', 'all');
   $('#lsRate').value = store.get('sq_lsrate', '2');
+  $('#lsMix').value = store.get('sq_lsmix', '2');
+  $('#lyVoice').value = store.get('sq_lyvoice', 'auto');
+  $('#lyRate').value = store.get('sq_lyrate', '1');
   if (store.get('sq_big', false)) { document.body.classList.add('big'); $('#qBig').classList.add('on'); }
   syncMediaChip();
   route();
