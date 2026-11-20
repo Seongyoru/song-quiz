@@ -87,6 +87,23 @@
   const KIND = { full: '정규 앨범', mini: '미니 앨범', best: '베스트 앨범' };
   function hintsOf(A, s) {
     const h = [];
+    // 곡마다 쓴 「느낌 · 주제 · 타이업 · 제목 뜻」 힌트가 있으면 그것부터 (막연한 날짜 · 트랙 번호 힌트는 뺀다)
+    const own = (A.hints && A.hints[s.t]) || [];
+    if (own.length) {
+      const era = eraOf(A, s);
+      h.push(...own.slice(0, Math.max(1, own.length - 1)));
+      if (era) h.push(T('{era} 시기의 곡이에요', { era }));
+      if (s.tie) h.push(T(TIE_HINT[s.tie]));
+      h.push(T(TYPE_HINT[s.type]));
+      if (own.length > 1) h.push(own[own.length - 1]);
+      if (s.type === 'coupling') h.push(T('싱글 「{rel}」에 함께 실린 곡이에요', { rel: s.rel }));
+      else if (s.album) h.push(T('{kind} 『{album}』에 실려 있어요', { kind: T(KIND[A.albums[s.album].kind]), album: s.album }));
+      h.push(T('제목은 띄어쓰기를 빼고 {n}글자예요', { n: [...s.t.replace(/\s/g, '')].length }));
+      if (s.tieName) h.push(T('타이업 작품은 『{name}』이에요', { name: s.tieName }));
+      const c0 = [...s.t][0], k0 = s.ko ? [...s.ko.replace(/\s/g, '')][0] : '';
+      h.push(I18N.lang === 'ko' && k0 && k0 !== c0 ? T('제목의 첫 글자는 「{c}」, 한글로는 「{k}」예요', { c: c0, k: k0 }) : T('제목의 첫 글자는 「{c}」예요', { c: c0 }));
+      return h;
+    }
     const era = eraOf(A, s);
     if (era) h.push(T('{era} 시기의 곡이에요', { era }));
     const latin = /[A-Za-z]/.test(s.t), jp = /[぀-ヿ㐀-鿿]/.test(s.t);
