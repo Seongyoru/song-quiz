@@ -1,7 +1,8 @@
 'use strict';
 /* 듣기 퀴즈 구간 : 곡 → [영상 id, 인트로 시작(초), 하이라이트 시작(초), 끝(초)]
  * 리듬마스타에서 실측한 공식 MV 41곡은 첫 박 · 하이라이트 · 끝 위치를 쓰고, 공식 음원(아트 트랙)은 0초 시작 · 길이로 계산한다 (null) */
-ARTISTS.find((a) => a.id === 'mga').clips = {"CONFLICT":["s5awVJNXoQI",0.38,null,283.64],
+ARTISTS.find((a) => a.id === 'mga').clips = {"あなたに":["ArN80_ahos0",0,null,null],
+  "CONFLICT":["s5awVJNXoQI",0.38,null,283.64],
   "アンゼンパイ":["mNJKbWHs1DE",0.38,null,265.94],
   "日々と君":["scEztdkUYmE",0.38,null,238.69],
   "WaLL FloWeR":["GpZRbfhn7lU",0.37,null,240.87],

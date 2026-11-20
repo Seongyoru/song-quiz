@@ -81,8 +81,9 @@
     album: '정규 앨범에 처음 실린 곡이에요 (싱글이 아니에요)',
     ep: '미니 앨범에 처음 실린 곡이에요',
     best: '베스트 앨범의 신곡으로 나온 곡이에요',
+    cover: '다른 가수의 곡을 부른 커버곡이에요 (트리뷰트 앨범)',
   };
-  const TYPE_SHORT = { single: 'CD 싱글', coupling: '커플링곡', digital: '배포 싱글', album: '앨범곡', ep: '미니 앨범곡', best: '베스트 앨범 신곡' };
+  const TYPE_SHORT = { single: 'CD 싱글', coupling: '커플링곡', digital: '배포 싱글', album: '앨범곡', ep: '미니 앨범곡', best: '베스트 앨범 신곡', cover: '커버곡' };
   const KIND = { full: '정규 앨범', mini: '미니 앨범', best: '베스트 앨범' };
   function hintsOf(A, s) {
     const h = [];
@@ -125,7 +126,7 @@
     document.body.style.setProperty('--ac2', A.color2 || A.color);
     $('#lsLabel').innerHTML = LABELS[A.id] || LABELS._;
     $('#artistName').textContent = A.name;
-    $('#lvl').hidden = !A.normalOut;
+    $('#lvl').hidden = !A.normalOut && !A.normalIn;
     $$('#lvl [data-lvl]').forEach((b) => b.classList.toggle('on', b.dataset.lvl === lvl()));
     $('#lyText').value = store.get(lyKey(), '');
     $$('#tabs a').forEach((a) => { a.href = `#/${A.id}/${a.dataset.mode}`; a.classList.toggle('on', a.dataset.mode === mode); });
@@ -344,7 +345,8 @@
   }
   // 난이도 : 일반은 아는 사람이 적은 곡을 뺀다 (하드는 전 곡)
   const lvl = () => store.get('sq_lvl', 'normal');
-  const inLvl = (i) => lvl() === 'hard' || !A.normalOut || !A.normalOut.includes(A.songs[i].t);
+  // normalIn(일반에 나오는 곡) 이 있으면 그것만, 없으면 normalOut(일반에서 빼는 곡) 을 뺀다
+  const inLvl = (i) => lvl() === 'hard' || (A.normalIn ? A.normalIn.includes(A.songs[i].t) : !A.normalOut || !A.normalOut.includes(A.songs[i].t));
   const lsPool = () => A.songs.map((s, i) => i).filter((i) => A.clips && A.clips[A.songs[i].t] && inLvl(i));
   const clipOf = (i) => A.clips[A.songs[i].t];
 

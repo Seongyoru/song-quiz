@@ -23,12 +23,17 @@ ARTISTS.push({
     { label: 'Phase 2', from: '2022-01-01', to: '2025-12-31' },
     { label: 'Phase 3', from: '2026-01-01' },
   ],
-  // 일반 모드에서 빼는 곡 (하드 모드는 전 곡) : 팬 모임 피드백으로 고른 곡 + 2016년까지 인디 · TWELVE 시절의 MV 없는 곡
-  normalOut: [
-    '日々と君', 'WaLL FloWeR', 'リスキーゲーム', '道徳と皿', '恋と吟', 'えほん', 'おもちゃの兵隊', 'FACTORY', 'JOURNEY', 'スマイロブドリーマ',
-    'SwitCh', 'On My MiND', 'WHOO WHOO WHOO', 'はじまり', 'SPLASH!!!', 'Folktale', 'How-to', '延々', 'norn', 'Doodle',
-    'アンゼンパイ', 'L.P', 'VIP', 'ゼンマイ', '愛情と矛先', '藍', 'キコリ時計', '私', 'SimPle', 'Hug', 'ノニサクウタ', 'ツキマシテハ',
-    'HeLLo', 'Oz', 'Log', '月とアネモネ',
+  // 일반 모드에 나오는 곡 70곡 (팬 모임 기준으로 고름) · 나머지는 하드 모드에서만
+  normalIn: [
+    'インフェルノ', 'ライラック', '青と夏', '僕のこと', 'ダンスホール', 'Soranji', 'ケセラセラ', 'ロマンチシズム',
+    'StaRt', 'クスシキ', '点描の唄', 'ダーリン', '私は最強', 'lulu.', 'Magic', '春愁',
+    'WanteD! WanteD!', 'ビターバカンス', 'familie', 'Love me, Love you', 'breakfast', 'CHEERS', 'コロンブス', 'ナハトムジーク',
+    'Brand New', 'ニュー・マイ・ノーマル', 'ブルーアンビエンス', 'ANTENNA', 'Dear', 'Speaking', 'Attitude', '天国',
+    'lovin\'', 'GOOD DAY', '共犯', 'ア・プリオリ', '風と町', 'フロリジナル', '鯨の唄', 'Carrying Happiness',
+    '夏の影', 'アウフヘーベン', 'umbrella', 'シンデレラ', 'サママ・フェスティバル！', '嘘じゃないよ', 'アポロドロス', 'In the Morning',
+    'どこかで日は昇る', 'ア・ポステリオリ', '我逢人', 'Loneliness', 'ツキマシテハ', '私', 'Hug', 'アンラブレス',
+    'パブリック', 'Folktale', '愛情と矛先', '君を知らない', '橙', 'Viking', 'Theater', 'Doodle',
+    'あなたに', 'They are', 'BFF', 'Blizzard', 'Just a Friend', 'ミスカサズ',
   ],
   albums: {
     Progressive: { d: '2015-02-18', kind: 'mini' },
@@ -164,6 +169,7 @@ ARTISTS.push({
     { t: 'Doodle', ko: '두들', en: 'Doodle', d: '2023-07-05', type: 'album', album: 'ANTENNA', track: 11, tie: 'cm', tieName: '花王 メリット' },
     { t: 'BFF', ko: '비에프에프', en: 'BFF', d: '2023-07-05', type: 'album', album: 'ANTENNA', track: 12, tie: null },
     { t: 'Feeling', ko: '필링', en: 'Feeling', d: '2023-07-05', type: 'album', album: 'ANTENNA', track: 13, tie: 'cm', tieName: 'カンロ ピュレグミ' },
+    { t: 'あなたに', ko: '아나타니', en: 'Anata ni', alias: 'anatani|아나타니|당신에게', d: '2023-10-25', type: 'cover', album: null, tie: null, note: 'MONGOL800 트리뷰트 앨범 『800TRIBUTE -champloo is the BEST!! 2-』의 커버곡' },
     /* ---- 2024 ~ 2025 배포 싱글 ---- */
     { t: 'ナハトムジーク', ko: '나하트무지크', en: 'Nachtmusik', d: '2024-01-17', type: 'digital', album: null, tie: 'movie', tieName: 'サイレントラブ' },
     { t: 'ライラック', ko: '라일락', en: 'Lilac', alias: '라이락쿠', d: '2024-04-12', type: 'digital', album: null, tie: 'anime', tieName: '忘却バッテリー' },
