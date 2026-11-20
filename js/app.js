@@ -306,6 +306,7 @@
   let L = null; // { artist, kind, no, song, songs:[], found:Set, item, secs, state, wrong, used:Set, score, total }
   let ytApi = null, yt = null, lsTimer = 0, lsWatch = 0;
   const players = {}; // div id → Promise<YT.Player>
+  const ready = {}; // div id → 준비된 YT.Player (멈춤은 바로 해야 해서 Promise 를 거치지 않는다)
   const lsKind = () => store.get('sq_lskind', 'intro');
   const lsRate = () => Number($('#lsRate').value) || 2;
   const lsMixN = () => Number($('#lsMix').value) || 2;
@@ -325,7 +326,7 @@
         const p = new YT.Player(el, {
           width: '100%', height: '100%',
           playerVars: { controls: 0, disablekb: 1, rel: 0, playsinline: 1, modestbranding: 1, iv_load_policy: 3, fs: 0 },
-          events: { onReady: () => ok(p) },
+          events: { onReady: () => { ready[el] = p; ok(p); } },
         });
       }));
     }
@@ -336,7 +337,8 @@
   function lsStop() {
     clearInterval(lsTimer); clearTimeout(lsWatch);
     $('#lsEq').classList.remove('on');
-    MIX_EL.forEach((el) => { if (players[el]) players[el].then((p) => { try { p.pauseVideo(); } catch (e) { /* 무시 */ } }); });
+    // 바로 멈춘다 : Promise 로 미루면 곧이어 보내는 재생 명령 뒤에 멈춤이 실행돼 소리가 안 난다
+    MIX_EL.forEach((el) => { if (ready[el]) { try { ready[el].pauseVideo(); } catch (e) { /* 무시 */ } } });
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* 무시 */ }
     rvStopSrc();
   }
