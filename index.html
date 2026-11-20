@@ -138,12 +138,18 @@
       </div>
       <!-- 가사 Q : 출제자가 적어 둔 가사를 기계 음성이 그대로 읽는다 (이 브라우저에만 저장) -->
       <div class="ls-extra" id="lyBox" hidden>
+        <div class="ly-dub">
+          <button type="button" class="btn main" id="dubPick" data-t="🎙️ 더빙 폴더 고르기"></button>
+          <button type="button" class="btn" id="dubAgain" hidden data-t="저번 더빙 폴더 다시 열기"></button>
+          <input type="file" id="dubFiles" webkitdirectory multiple hidden>
+          <span class="ls-extra-note" id="dubNote"></span>
+        </div>
         <details id="lyEdit">
           <summary data-t="가사 목록 편집"></summary>
           <p class="ls-extra-note" data-t="한 줄에 하나씩 「곡 제목 | 읽어 줄 가사」로 적어 주세요. 가사를 한글 발음으로 적으면 한국어 음성이 국어책 읽듯이 읽어요. 이 브라우저에만 저장돼요."></p>
           <textarea id="lyText" rows="8" spellcheck="false" placeholder="青と夏 | ..."></textarea>
         </details>
-        <div class="ly-opts">
+        <div class="ly-opts" id="lyOpts">
           <select id="lyVoice" aria-label="음성">
             <option value="auto" data-t="음성 자동 (한글이면 한국어)"></option>
             <option value="ko-KR" data-t="한국어 음성"></option>

@@ -364,6 +364,7 @@
     MIX_EL.forEach((el) => { if (ready[el]) { try { ready[el].pauseVideo(); } catch (e) { /* 무시 */ } } });
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* 무시 */ }
     rvStopSrc();
+    dubStop();
   }
   // 난이도 : 일반은 아는 사람이 적은 곡을 뺀다 (하드는 전 곡)
   const lvl = () => store.get('sq_lvl', 'normal');
@@ -381,7 +382,38 @@
 
   /* ---------- 가사 Q : 「곡 제목 | 가사」 목록 (가수마다, 이 브라우저에만 저장) ---------- */
   const lyKey = () => `sq_ly_${A.id}`;
+  /* ---------- 가사 Q 더빙 : 출제자 컴퓨터 폴더의 「곡 제목.m4a」 파일을 읽어 튼다 (어디에도 올리지 않음) ---------- */
+  const DUB = { artist: null, files: new Map(), audio: null, saved: false };
+  function dubLoad(files) {
+    DUB.artist = A.id; DUB.files = new Map();
+    files.forEach((f) => {
+      if (!/^audio\//.test(f.type || '') && !/\.(m4a|mp3|wav|ogg|aac|flac|opus)$/i.test(f.name)) return;
+      const t = norm(f.name.replace(/\.[^.]+$/, ''));
+      const i = A.songs.findIndex((s) => norm(s.t) === t || answers(s).includes(t));
+      if (i >= 0) DUB.files.set(i, f);
+    });
+    return DUB.files.size;
+  }
+  const dubOn = () => !!A && DUB.artist === A.id && DUB.files.size > 0;
+  function dubStop() { if (DUB.audio) { try { DUB.audio.pause(); URL.revokeObjectURL(DUB.audio.src); } catch (e) { /* 무시 */ } DUB.audio = null; } }
+  // 고른 폴더를 기억해 두고 (브라우저 IndexedDB), 다음에는 버튼 한 번으로 다시 연다
+  const idb = (mode, fn) => new Promise((ok, no) => {
+    const r = indexedDB.open('songquiz', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onerror = () => no(r.error);
+    r.onsuccess = () => { const st = r.result.transaction('kv', mode).objectStore('kv'); const q = fn(st); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); };
+  });
+  async function dubFromHandle(h) {
+    const files = [];
+    for await (const e of h.values()) if (e.kind === 'file') files.push(await e.getFile());
+    return dubLoad(files);
+  }
+  async function dubAfterLoad(n) {
+    toast(n ? T('더빙 {n}곡을 불러왔어요', { n }) : T('곡 제목 이름의 음성 파일을 찾지 못했어요'));
+    if (L && L.kind === 'lyric') { L.used = new Set(); newListen('same'); }
+  }
   function lyItems() {
+    if (dubOn()) return [...DUB.files.keys()].filter((i) => inLvl(i)).map((i) => ({ title: A.songs[i].t, text: '', song: i, dub: true }));
     return String(store.get(lyKey(), '')).split('\n').map((line) => {
       const k = line.search(/[|｜]/);
       if (k < 0) return null;
@@ -464,7 +496,12 @@
     $('#rvBox').hidden = L.kind !== 'rev';
     $('#lyBox').hidden = L.kind !== 'lyric';
     $('#rvNote').textContent = RV.files.length ? T('파일 {n}개 · 파일은 이 브라우저 안에서만 쓰고 어디에도 올리지 않아요', { n: RV.files.length }) : T('파일은 이 브라우저 안에서만 쓰고 어디에도 올리지 않아요');
-    if (L.kind === 'lyric') $('#lyNote').textContent = T('가사 {n}개', { n: lyItems().length });
+    if (L.kind === 'lyric') {
+      $('#lyNote').textContent = T('가사 {n}개', { n: lyItems().length });
+      $('#dubNote').textContent = dubOn() ? T('더빙 {a}곡 중 이 난이도 {b}곡', { a: DUB.files.size, b: lyItems().length }) : T('「곡 제목」 이름의 음성 파일이 든 폴더를 고르면 더빙을 틀어 줘요. 파일은 이 컴퓨터에서만 써요');
+      $('#dubAgain').hidden = dubOn() || !DUB.saved;
+      $('#lyEdit').hidden = dubOn(); $('#lyOpts').hidden = dubOn();
+    }
     $('#lsNo').textContent = T('{n}번째 문제', { n: L.no });
     $('#lsScore').textContent = L.total ? T('맞힌 문제 {a} / {b}', { a: L.score, b: L.total }) : '';
     $('#lsDesc').textContent = T(LS_DESC[L.kind]);
@@ -489,8 +526,8 @@
       $('#lsAnswer').className = `q-answer ${L.state}`;
       $('#lsaTitle').textContent = L.state === 'right' ? (L.kind === 'lyric' ? T('정답!') : T('정답! {n}초 만에 맞혔어요', { n: L.secs })) : T('정답은 이 곡이에요');
       if (L.kind === 'mix') $('#lsaSong').innerHTML = L.songs.map((i) => `<div class="mix-a ${L.found.has(i) ? 'ok' : ''}">${songLine(A.songs[i])}</div>`).join('');
-      else if (L.song >= 0) $('#lsaSong').innerHTML = songLine(A.songs[L.song]) + (L.kind === 'lyric' ? `<span class="ly-text">${esc(L.item.text)}</span>` : '');
-      else $('#lsaSong').innerHTML = `<b>${esc(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))}</b>${L.kind === 'lyric' ? `<span class="ly-text">${esc(L.item.text)}</span>` : ''}`;
+      else if (L.song >= 0) $('#lsaSong').innerHTML = songLine(A.songs[L.song]) + (L.kind === 'lyric' && L.item.text ? `<span class="ly-text">${esc(L.item.text)}</span>` : '');
+      else $('#lsaSong').innerHTML = `<b>${esc(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))}</b>${L.kind === 'lyric' && L.item.text ? `<span class="ly-text">${esc(L.item.text)}</span>` : ''}`;
     }
   }
   // 지금 문제의 들려줄 구간 [시작, 끝] (영상 시간, 초)
@@ -553,6 +590,13 @@
     lsStop();
     $('#lsEq').classList.add('on');
     L.played = true;
+    if (L.item.dub) {
+      const a = new Audio(URL.createObjectURL(DUB.files.get(L.item.song)));
+      DUB.audio = a;
+      a.onended = () => { if (DUB.audio === a) $('#lsEq').classList.remove('on'); };
+      a.play().catch(() => { $('#lsEq').classList.remove('on'); });
+      return;
+    }
     speak(L.item.text, () => { if (L && L.kind === 'lyric') $('#lsEq').classList.remove('on'); });
   }
   async function rvPlay() {
@@ -926,6 +970,24 @@
     if (L && L.kind === 'rev') { L.used = new Set(); newListen('same'); }
   });
   $('#lyText').addEventListener('input', () => { store.set(lyKey(), $('#lyText').value); if (L && L.kind === 'lyric' && (L.empty || L.state !== 'play')) newListen('same'); else if (L) renderListen(); });
+  // 더빙 폴더 고르기 : 크롬은 폴더를 기억해 두고, 안 되면 일반 폴더 선택 창
+  $('#dubPick').addEventListener('click', async () => {
+    if (window.showDirectoryPicker) {
+      try {
+        const h = await window.showDirectoryPicker({ id: 'sqdub', mode: 'read' });
+        try { await idb('readwrite', (st) => st.put(h, 'dub')); DUB.saved = true; } catch (e) { /* 기억 못 해도 진행 */ }
+        dubAfterLoad(await dubFromHandle(h));
+      } catch (e) { if (e && e.name !== 'AbortError') $('#dubFiles').click(); }
+    } else $('#dubFiles').click();
+  });
+  $('#dubFiles').addEventListener('change', (e) => dubAfterLoad(dubLoad([...e.target.files])));
+  $('#dubAgain').addEventListener('click', async () => {
+    try {
+      const h = await idb('readonly', (st) => st.get('dub'));
+      if (h && (await h.requestPermission({ mode: 'read' })) === 'granted') dubAfterLoad(await dubFromHandle(h));
+    } catch (e) { $('#dubPick').click(); }
+  });
+  idb('readonly', (st) => st.get('dub')).then((h) => { DUB.saved = !!h; if (L && L.kind === 'lyric') renderListen(); }).catch(() => {});
   $('#lyVoice').addEventListener('change', () => store.set('sq_lyvoice', $('#lyVoice').value));
   $('#lyRate').addEventListener('change', () => store.set('sq_lyrate', $('#lyRate').value));
   // 난이도 : 일반 / 하드
