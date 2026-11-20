@@ -101,12 +101,14 @@ const ROOM = (() => {
     pub();
     openDlg();
   }
-  function judge(ok, fromApp) {
+  // keepOpen : 동시 재생처럼 한 곡을 맞혀도 남은 곡이 있으면 버저를 다시 연다
+  function judge(ok, fromApp, keepOpen) {
     if (role !== 'host' || !S.locked) return;
     const p = S.players[S.locked.id];
     if (ok) {
       if (p) { p.score += 1; p.marbles = mOf(p) + 1; }
-      S.locked = null; S.open = false;
+      S.locked = null; S.open = !!keepOpen;
+      if (keepOpen) sfx('correct', 0.5);
       hideBig();
       pub();
       if (!fromApp && window.SQ) window.SQ.right();
@@ -131,7 +133,7 @@ const ROOM = (() => {
   }
   function newRound() { if (role !== 'host') return; S.round += 1; S.open = true; S.locked = null; S.blocked = []; S.cool = {}; hideBig(); pub(); }
   // 퀴즈 화면에서 답을 확인했을 때 : 버저를 누른 사람이 있으면 그 사람의 정답 · 오답으로 처리
-  function answer(ok) { if (role !== 'host' || !S || !S.locked) return false; judge(ok, true); return true; }
+  function answer(ok, keepOpen) { if (role !== 'host' || !S || !S.locked) return false; judge(ok, true, keepOpen); return true; }
   function closeRound() { if (role !== 'host' || (!S.open && !S.locked)) return; S.open = false; S.locked = null; hideBig(); pub(); }
 
   /* ---------- 참가자 ---------- */

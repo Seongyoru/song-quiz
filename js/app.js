@@ -610,7 +610,8 @@
     $('#lsAnswer').hidden = !done;
     if (done) {
       $('#lsAnswer').className = `q-answer ${L.state}`;
-      $('#lsaTitle').textContent = L.state === 'right' ? (L.kind === 'lyric' ? T('정답!') : T('정답! {n}초 만에 맞혔어요', { n: L.secs })) : T('정답은 이 곡이에요');
+      $('#lsaTitle').textContent = L.state === 'right' ? (L.kind === 'lyric' ? T('정답!') : T('정답! {n}초 만에 맞혔어요', { n: L.secs }))
+        : L.kind === 'mix' && L.found.size ? T('{a}곡 중 {b}곡 맞혔어요', { a: L.songs.length, b: L.found.size }) : T('정답은 이 곡이에요');
       if (L.kind === 'mix') $('#lsaSong').innerHTML = L.songs.map((i) => `<div class="mix-a ${L.found.has(i) ? 'ok' : ''}">${songLine(A.songs[i])}</div>`).join('');
       else if (L.song >= 0) $('#lsaSong').innerHTML = songLine(A.songs[L.song]) + (L.kind === 'lyric' && L.item.text ? `<span class="ly-text">${esc(L.item.text)}</span>` : '');
       else $('#lsaSong').innerHTML = `<b>${esc(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))}</b>${L.kind === 'lyric' && L.item.text ? `<span class="ly-text">${esc(L.item.text)}</span>` : ''}`;
@@ -721,6 +722,8 @@
   }
   function lsFinish(state) {
     L.state = state; L.total += 1;
+    // 동시 재생은 한 곡이라도 맞혔으면 맞힌 문제로
+    if (state === 'reveal' && L.kind === 'mix' && L.found.size) { L.score += 1; FX.celebrate(1); }
     if (state === 'right') { L.score += 1; FX.celebrate(L.kind === 'lyric' || L.secs <= 3 ? 3 : L.secs <= 6 ? 2 : 1); }
     sfx(state === 'right' ? 'correct' : 'reveal');
     lsStop();
@@ -750,6 +753,8 @@
         L.found.add(hit);
         $('#lsInput').value = '';
         if (L.found.size === L.songs.length) { if (window.ROOM) window.ROOM.answer(true); lsFinish('right'); return; }
+        // 한 곡만 맞혀도 점수 : 방에서는 버저를 누른 사람에게 바로 주고, 남은 곡을 위해 버저를 다시 연다
+        if (window.ROOM) window.ROOM.answer(true, true);
         sfx('up-right', 0.5);
         renderListen();
         $('#lsInput').focus();
