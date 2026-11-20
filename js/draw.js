@@ -69,7 +69,9 @@ const LUCKY = (() => {
     const hole = (x, hy, r, kind) => { const b = Bodies.circle(x, hy, r, { isStatic: true, isSensor: true }); b.kind = kind; b.ph = Math.random() * 6; b.open = true; solid.push(b); Composite.add(world, b); return b; };
     // 블랙홀 : 반지름 R 안의 구슬을 빙글빙글 끌어당긴다 (오래 붙잡힌 구슬은 잠깐 놓아 준다)
     const wells = [];
-    const well = (x, wy, R) => wells.push({ x, y: wy, R, ph: Math.random() * 6 });
+    const well = (x, wy, R) => wells.push({ x, y: wy, R, ph: Math.random() * 4.5 });
+    // 4.5초마다 0.9초 동안 강하게 빨아들인다 (SURGE) : 범위 1.8배 · 힘 3.5배
+    const surgeOf = (w, ms) => { const c = (ms / 1000 + w.ph) % 4.5; return c < 0.9 ? Math.sin((c / 0.9) * Math.PI) : 0; };
     const pops = []; // 떠오르는 글자 { x, y, text, color, at }
     const waves = []; // 충격파 { x, y, at }
     const boosts = []; // 가속 패드 (센서) : 지나가는 구슬을 dir 방향으로 민다
@@ -170,10 +172,10 @@ const LUCKY = (() => {
         const b = add(Bodies.rectangle(cx, cy, 150, 10, { isStatic: true, restitution: 0.6, chamfer: { radius: 4 } }), 'mill');
         movers.push({ b, fn: (t) => Body.setAngle(b, t * (k ? -0.003 : 0.0032)) });
       });
-      [[W * 0.15, y - 420], [W * 0.85, y - 420], [W * 0.5, y - 100], [W * 0.5, y - 440]].forEach(([bx, by]) => bumper(bx, by, 22));
+      [[W * 0.15, y - 420], [W * 0.85, y - 420], [W * 0.5, y - 100]].forEach(([bx, by]) => bumper(bx, by, 22));
       hole(W * 0.12, y - 200, 18, 'warp'); hole(W * 0.88, y - 260, 18, 'warp');
       well(W * 0.5, y - 270, 160);
-      hole(W * 0.5, y - 330, 16, 'back');
+      hole(W * 0.74, y - 120, 16, 'back');
       y += 40;
     });
     // 8. 마지막 깔때기 + 출구를 가로지르는 진자
@@ -299,10 +301,11 @@ const LUCKY = (() => {
           if (b.done || (b.freeUntil && simT < b.freeUntil)) return;
           let pulled = false;
           wells.forEach((w) => {
+            const su = surgeOf(w, simT), RR = w.R * (1 + su * 0.8);
             const dx = w.x - b.position.x, dy = w.y - b.position.y, d = Math.hypot(dx, dy);
-            if (d > w.R || d < 6) return;
+            if (d > RR || d < 6) return;
             pulled = true;
-            const k = (1 - d / w.R) * 0.0009 * b.mass;
+            const k = (1 - d / RR) * 0.0009 * (1 + su * 2.5) * b.mass;
             Body.applyForce(b, b.position, { x: (dx / d) * k - (dy / d) * k * 0.9, y: (dy / d) * k + (dx / d) * k * 0.9 });
           });
           b.wellT = pulled ? (b.wellT || 0) + STEP : 0;
@@ -352,17 +355,7 @@ const LUCKY = (() => {
         g.fillStyle = `hsla(${z.hue}, 90%, 70%, .9)`; g.fillRect(0, z.y0, 6, z.y1 - z.y0); g.fillRect(W - 6, z.y0, 6, z.y1 - z.y0);
         g.save(); g.font = '700 34px Fredoka, sans-serif'; g.textAlign = 'right'; g.fillStyle = `hsla(${z.hue}, 90%, 75%, .22)`; g.fillText(z.name, W - 20, z.y0 + 40); g.restore();
       });
-      wells.forEach((w) => {
-        if (w.y + w.R < camY || w.y - w.R > camY + viewH) return;
-        const rg = g.createRadialGradient(w.x, w.y, 4, w.x, w.y, w.R);
-        rg.addColorStop(0, 'rgba(0,0,0,.95)'); rg.addColorStop(0.18, 'rgba(60,10,90,.8)'); rg.addColorStop(0.55, 'rgba(140,60,255,.18)'); rg.addColorStop(1, 'rgba(140,60,255,0)');
-        g.fillStyle = rg; g.beginPath(); g.arc(w.x, w.y, w.R, 0, Math.PI * 2); g.fill();
-        g.save(); g.translate(w.x, w.y); g.rotate(-performance.now() / 300);
-        g.strokeStyle = 'rgba(200,150,255,.55)'; g.lineWidth = 2;
-        for (let k = 0; k < 4; k++) { g.beginPath(); g.arc(0, 0, w.R * (0.3 + k * 0.15), k, k + 2.2); g.stroke(); }
-        g.restore();
-        g.font = '700 12px Fredoka, sans-serif'; g.textAlign = 'center'; g.fillStyle = 'rgba(210,170,255,.8)'; g.fillText('BLACK HOLE', w.x, w.y + w.R * 0.32 + 8);
-      });
+      wells.forEach((w) => { if (w.y + w.R > camY && w.y - w.R < camY + viewH) drawWell(w, performance.now()); });
       const inView = (b, m = 60) => b.bounds.max.y > camY - m && b.bounds.min.y < camY + viewH + m;
       const now = performance.now();
       solid.forEach((b) => {
@@ -384,15 +377,7 @@ const LUCKY = (() => {
           for (let k = -40; k < 40; k += 20) { const xx = k + d * sh; g.beginPath(); g.moveTo(xx, -7); g.lineTo(xx + d * 8, 0); g.lineTo(xx, 7); g.lineTo(xx + d * 3, 0); g.closePath(); g.fill(); }
           g.restore();
         } else if (b.kind === 'warp' || b.kind === 'back') {
-          const f = Math.max(0, 1 - (now - (flash.get(b) || 0)) / 500);
-          const c = !b.open ? '120,124,150' : b.kind === 'warp' ? '91,200,255' : '255,93,93';
-          g.save(); g.translate(b.position.x, b.position.y);
-          g.fillStyle = `rgba(${c},${0.18 + f * 0.5})`; g.beginPath(); g.arc(0, 0, b.circleRadius + 10 + f * 14, 0, Math.PI * 2); g.fill();
-          g.fillStyle = '#05060f'; g.beginPath(); g.arc(0, 0, b.circleRadius, 0, Math.PI * 2); g.fill();
-          g.rotate(now / (b.kind === 'warp' ? 200 : -260)); g.strokeStyle = `rgb(${c})`; g.lineWidth = 3;
-          for (let k = 0; k < 3; k++) { g.beginPath(); g.arc(0, 0, b.circleRadius - 3, k * 2.1, k * 2.1 + 1.2); g.stroke(); }
-          g.restore();
-          g.font = '700 13px Fredoka, sans-serif'; g.textAlign = 'center'; g.fillStyle = `rgb(${c})`; g.fillText(`${b.kind === 'warp' ? 'WARP' : 'BACK'}${b.open ? '' : ' · CLOSED'}`, b.position.x, b.position.y + b.circleRadius + 18);
+          drawGate(b, now);
         } else if (b.kind === 'hub') {
           g.fillStyle = '#ffd166'; g.beginPath(); g.arc(b.position.x, b.position.y, 10, 0, Math.PI * 2); g.fill();
         } else {
@@ -445,6 +430,111 @@ const LUCKY = (() => {
         g.fillStyle = 'rgba(10,12,30,.8)'; g.fillRect(x - tw / 2, by - r - 46, tw, 32);
         g.fillStyle = '#ffd166'; g.fillText(label, x, by - r - 22);
       }
+    }
+    /* ---------- 블랙홀 · 게이트 그리기 ---------- */
+    // 블랙홀 : 빨려 들어가는 빛 알갱이 → 기울어진 강착원반(뒤쪽) → 사건의 지평선 → 광자 고리 → 강착원반(앞쪽)
+    function drawWell(w, now) {
+      if (!w.parts) w.parts = Array.from({ length: 46 }, () => ({ a: Math.random() * Math.PI * 2, r: Math.random(), s: 0.6 + Math.random() * 0.8 }));
+      const R = w.R, core = R * 0.2, t = now / 1000;
+      // 바깥 빛 번짐
+      const halo = g.createRadialGradient(w.x, w.y, core, w.x, w.y, R);
+      halo.addColorStop(0, 'rgba(255,170,80,.28)'); halo.addColorStop(0.35, 'rgba(160,70,255,.16)'); halo.addColorStop(1, 'rgba(90,40,200,0)');
+      g.fillStyle = halo; g.beginPath(); g.arc(w.x, w.y, R, 0, Math.PI * 2); g.fill();
+      // 나선을 그리며 빨려 드는 알갱이
+      w.parts.forEach((q) => {
+        const life = (q.r - t * 0.18 * q.s) % 1, rr = (life < 0 ? life + 1 : life);
+        const rad = core + rr * (R - core), ang = q.a + (1 - rr) * 6 + t * 1.6 * q.s;
+        g.fillStyle = `rgba(255,${180 + rr * 60},${120 + rr * 120},${0.25 + (1 - rr) * 0.7})`;
+        g.beginPath(); g.arc(w.x + Math.cos(ang) * rad, w.y + Math.sin(ang) * rad * 0.55, 1.2 + (1 - rr) * 1.6, 0, Math.PI * 2); g.fill();
+      });
+      // 강착원반 : 납작한 타원 (뒤쪽 절반)
+      const disk = (front) => {
+        g.save(); g.translate(w.x, w.y); g.rotate(-0.35); g.scale(1, 0.32);
+        const dg = g.createRadialGradient(0, 0, core * 1.1, 0, 0, R * 0.62);
+        dg.addColorStop(0, 'rgba(255,245,220,.95)'); dg.addColorStop(0.35, 'rgba(255,170,70,.85)'); dg.addColorStop(0.7, 'rgba(220,70,140,.45)'); dg.addColorStop(1, 'rgba(120,40,220,0)');
+        g.fillStyle = dg; g.beginPath();
+        if (front) g.arc(0, 0, R * 0.62, 0, Math.PI); else g.arc(0, 0, R * 0.62, Math.PI, Math.PI * 2);
+        g.arc(0, 0, core * 1.05, front ? Math.PI : Math.PI * 2, front ? 0 : Math.PI, true);
+        g.closePath(); g.fill();
+        // 원반 무늬가 돈다
+        g.strokeStyle = 'rgba(255,230,200,.35)'; g.lineWidth = 2;
+        for (let k = 0; k < 3; k++) { const st = t * 2.2 + k * 2.1; g.beginPath(); g.arc(0, 0, R * (0.32 + k * 0.1), front ? st % Math.PI : Math.PI + (st % Math.PI), (front ? st % Math.PI : Math.PI + (st % Math.PI)) + 0.9); g.stroke(); }
+        g.restore();
+      };
+      disk(false);
+      // 사건의 지평선 + 광자 고리
+      g.fillStyle = '#000'; g.beginPath(); g.arc(w.x, w.y, core, 0, Math.PI * 2); g.fill();
+      const ring = g.createRadialGradient(w.x, w.y, core * 0.9, w.x, w.y, core * 1.35);
+      ring.addColorStop(0, 'rgba(255,255,255,0)'); ring.addColorStop(0.45, `rgba(255,236,200,${0.85 + Math.sin(t * 6) * 0.1})`); ring.addColorStop(1, 'rgba(255,150,60,0)');
+      g.fillStyle = ring; g.beginPath(); g.arc(w.x, w.y, core * 1.35, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#000'; g.beginPath(); g.arc(w.x, w.y, core * 0.92, 0, Math.PI * 2); g.fill();
+      disk(true);
+      const su = surgeOf(w, simT);
+      if (su > 0.01) {
+        const RR = R * (1 + su * 0.8);
+        for (let k = 0; k < 3; k++) {
+          const ph = ((now / 260) + k / 3) % 1, rr = RR * (1 - ph) + core * ph;
+          g.strokeStyle = `rgba(200,140,255,${su * (1 - ph) * 0.9})`; g.lineWidth = 3;
+          g.beginPath(); g.arc(w.x, w.y, rr, 0, Math.PI * 2); g.stroke();
+        }
+        g.font = '700 22px Fredoka, sans-serif'; g.textAlign = 'center'; g.fillStyle = `rgba(230,180,255,${su})`; g.fillText('SURGE!', w.x, w.y - R * 0.5);
+      }
+      g.font = '700 12px Fredoka, sans-serif'; g.textAlign = 'center'; g.fillStyle = 'rgba(255,210,170,.75)'; g.fillText('BLACK HOLE', w.x, w.y + R * 0.42 + 10);
+    }
+    // 게이트 : 열리면 소용돌이 포털 (조리개처럼 커짐), 닫히면 금속 조리개 날개
+    function drawGate(b, now) {
+      const warp = b.kind === 'warp', r = b.circleRadius, t = now / 1000;
+      b.vis = (b.vis == null ? 1 : b.vis) + ((b.open ? 1 : 0) - (b.vis == null ? 1 : b.vis)) * 0.12;
+      const o = b.vis, f = Math.max(0, 1 - (now - (flash.get(b) || 0)) / 600);
+      const c1 = warp ? [91, 200, 255] : [255, 80, 90], c2 = warp ? [150, 110, 255] : [255, 170, 60];
+      const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+      g.save(); g.translate(b.position.x, b.position.y);
+      // 바깥 빛
+      const gl = g.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 2.6 + f * 20);
+      gl.addColorStop(0, rgba(c1, 0.35 * o + f * 0.4)); gl.addColorStop(1, rgba(c1, 0));
+      g.fillStyle = gl; g.beginPath(); g.arc(0, 0, r * 2.6 + f * 20, 0, Math.PI * 2); g.fill();
+      // 바깥 틀 (금속 고리 + 눈금)
+      g.strokeStyle = '#3a3f66'; g.lineWidth = 7; g.beginPath(); g.arc(0, 0, r + 6, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = rgba(c1, 0.5 + 0.5 * o); g.lineWidth = 2;
+      g.save(); g.rotate(t * (warp ? 0.8 : -0.8));
+      for (let k = 0; k < 12; k++) { g.rotate(Math.PI / 6); g.beginPath(); g.moveTo(r + 3, 0); g.lineTo(r + 9, 0); g.stroke(); }
+      g.restore();
+      // 안쪽 : 소용돌이 (열린 만큼 보인다)
+      if (o > 0.02) {
+        g.save(); g.beginPath(); g.arc(0, 0, r * o, 0, Math.PI * 2); g.clip();
+        const core = g.createRadialGradient(0, 0, 0, 0, 0, r);
+        core.addColorStop(0, '#ffffff'); core.addColorStop(0.25, rgba(c1, 1)); core.addColorStop(0.7, rgba(c2, 0.9)); core.addColorStop(1, '#05060f');
+        g.fillStyle = core; g.fillRect(-r, -r, r * 2, r * 2);
+        g.rotate(t * (warp ? 3 : -3));
+        for (let k = 0; k < 5; k++) {
+          g.rotate((Math.PI * 2) / 5);
+          g.strokeStyle = `rgba(255,255,255,${0.55 - k * 0.05})`; g.lineWidth = 2.2;
+          g.beginPath(); for (let u = 0; u <= 1.001; u += 0.1) { const rr = u * r, aa = u * 3.2; const x = Math.cos(aa) * rr, y = Math.sin(aa) * rr; u ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+        }
+        g.restore();
+      }
+      // 닫히는 조리개 날개
+      if (o < 0.98) {
+        const close = 1 - o;
+        g.save(); g.beginPath(); g.arc(0, 0, r + 0.5, 0, Math.PI * 2); g.clip();
+        for (let k = 0; k < 6; k++) {
+          g.save(); g.rotate((Math.PI / 3) * k + close * 0.6);
+          g.fillStyle = k % 2 ? '#4a5078' : '#3c4166';
+          g.beginPath(); g.moveTo(r * 1.2, 0); g.arc(0, 0, r * 1.2, 0, Math.PI / 3 + 0.05); g.lineTo(r * (1.25 - close * 1.25), r * 0.1); g.closePath(); g.fill();
+          g.restore();
+        }
+        g.restore();
+      }
+      // 튀는 불꽃 (열려 있을 때)
+      if (o > 0.5) for (let k = 0; k < 6; k++) {
+        const a = t * (warp ? 2.4 : -2.4) + k * 1.05, rr = r + 6 + ((t * 30 + k * 7) % 10);
+        g.fillStyle = rgba(c1, 0.8 - ((t * 30 + k * 7) % 10) / 12);
+        g.beginPath(); g.arc(Math.cos(a) * rr, Math.sin(a) * rr, 1.6, 0, Math.PI * 2); g.fill();
+      }
+      g.restore();
+      g.font = '700 13px Fredoka, sans-serif'; g.textAlign = 'center';
+      g.fillStyle = b.open ? rgba(c1, 1) : 'rgba(150,155,190,.9)';
+      g.fillText(`${warp ? 'WARP ⇣' : 'BACK ⇡'}${b.open ? '' : ' · CLOSED'}`, b.position.x, b.position.y + r + 24);
     }
     function drawMini(lead) {
       const mw = mini.width, mh = mini.height;
