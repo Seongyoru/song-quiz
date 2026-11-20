@@ -398,13 +398,54 @@
     const u = new Uint8Array(buf);
     return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(0, 12) }, key, u.slice(12));
   }
+  // 한글 자판을 영어 상태로 친 글자 (예 : gksrmf) → 두벌식 한글 (한글) 로 바꾼다
+  const KEY2J = { q: 'ㅂ', w: 'ㅈ', e: 'ㄷ', r: 'ㄱ', t: 'ㅅ', y: 'ㅛ', u: 'ㅕ', i: 'ㅑ', o: 'ㅐ', p: 'ㅔ', a: 'ㅁ', s: 'ㄴ', d: 'ㅇ', f: 'ㄹ', g: 'ㅎ', h: 'ㅗ', j: 'ㅓ', k: 'ㅏ', l: 'ㅣ', z: 'ㅋ', x: 'ㅌ', c: 'ㅊ', v: 'ㅍ', b: 'ㅠ', n: 'ㅜ', m: 'ㅡ', Q: 'ㅃ', W: 'ㅉ', E: 'ㄸ', R: 'ㄲ', T: 'ㅆ', O: 'ㅒ', P: 'ㅖ' };
+  const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+  const JONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  const VV = { ㅗㅏ: 'ㅘ', ㅗㅐ: 'ㅙ', ㅗㅣ: 'ㅚ', ㅜㅓ: 'ㅝ', ㅜㅔ: 'ㅞ', ㅜㅣ: 'ㅟ', ㅡㅣ: 'ㅢ' };
+  const CC = { ㄱㅅ: 'ㄳ', ㄴㅈ: 'ㄵ', ㄴㅎ: 'ㄶ', ㄹㄱ: 'ㄺ', ㄹㅁ: 'ㄻ', ㄹㅂ: 'ㄼ', ㄹㅅ: 'ㄽ', ㄹㅌ: 'ㄾ', ㄹㅍ: 'ㄿ', ㄹㅎ: 'ㅀ', ㅂㅅ: 'ㅄ' };
+  function toHangul(str) {
+    let out = '', cur = {};
+    const flush = () => {
+      if (cur.cho && cur.jung) out += String.fromCharCode(0xac00 + (CHO.indexOf(cur.cho) * 21 + JUNG.indexOf(cur.jung)) * 28 + JONG.indexOf(cur.jong || ''));
+      else out += (cur.cho || '') + (cur.jung || '');
+      cur = {};
+    };
+    for (const ch of str) {
+      const j = KEY2J[ch] || KEY2J[ch.toLowerCase()];
+      if (!j) { flush(); out += ch; continue; }
+      if (!JUNG.includes(j)) {
+        if (cur.cho && cur.jung && !cur.jong && JONG.includes(j)) { cur.jong = j; cur.parts = [j]; }
+        else if (cur.jong && cur.parts.length === 1 && CC[cur.jong + j]) { cur.jong = CC[cur.jong + j]; cur.parts.push(j); }
+        else { flush(); cur = { cho: j }; }
+      } else if (cur.jong) {
+        // 받침이 다음 글자의 첫소리로 넘어간다
+        const move = cur.parts.pop();
+        cur.jong = cur.parts.length ? cur.parts[0] : '';
+        flush(); cur = { cho: move, jung: j };
+      } else if (cur.jung && VV[cur.jung + j]) cur.jung = VV[cur.jung + j];
+      else if (cur.cho && !cur.jung) cur.jung = j;
+      else { flush(); cur = { jung: j }; }
+    }
+    flush();
+    return out;
+  }
+  async function dubKey(pass, meta) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(meta.salt), iterations: meta.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  }
   async function dubUnlock(pass, quiet) {
     const meta = await dubMeta();
     if (!meta || !pass) return false;
     try {
-      const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
-      const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(meta.salt), iterations: meta.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-      const list = JSON.parse(new TextDecoder().decode(await dubOpen(await (await fetch(`dub/${A.id}/list.bin`)).arrayBuffer(), key)));
+      // 그대로 한 번, 영어 자판으로 친 것 같으면 한글로 바꿔서 한 번 더
+      const tries = [pass]; if (/[a-zA-Z]/.test(pass)) tries.push(toHangul(pass));
+      const buf = await (await fetch(`dub/${A.id}/list.bin`)).arrayBuffer();
+      let key = null, list = null;
+      for (const p of tries) {
+        try { const k = await dubKey(p, meta); list = JSON.parse(new TextDecoder().decode(await dubOpen(buf, k))); key = k; pass = p; break; } catch (e) { /* 다음 후보 */ }
+      }
+      if (!key) throw new Error('wrong');
       DUB.artist = A.id; DUB.key = key; DUB.files = new Map(); DUB.cache = new Map();
       list.forEach((x) => { const t = norm(x.t); const i = A.songs.findIndex((s) => norm(s.t) === t || answers(s).includes(t)); if (i >= 0) DUB.files.set(i, { f: x.f, type: x.type }); });
       store.set(`sq_dubpw_${A.id}`, pass);

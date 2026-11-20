@@ -726,3 +726,7 @@ body.big .room-btn { font-size: 17px; padding: 10px 18px 10px 14px; }
 /* 처음부터 버튼은 로고와 오른쪽 버튼들 사이 가운데에 (겹치지 않게 흐름 안에) */
 .reset-btn { position: static; transform: none; margin: 0 auto; }
 .reset-btn:hover { transform: translateY(-2px); }
+
+/* 비밀번호 칸 : 한글 입력이 되도록 일반 칸 + 글자 가리기 */
+.pw { -webkit-text-security: disc; text-security: disc; }
+.pw:placeholder-shown { -webkit-text-security: none; }

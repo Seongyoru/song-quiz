@@ -49,6 +49,7 @@ const LUCKY = (() => {
       rumble: () => ok('rumble', 800) && (tone(70, 38, 1.0, 'sine', 0.32), noise(1.0, 320, 70, 0.7, 0.22, 'lowpass')),
       boom: () => ok('boom', 150) && (tone(150, 42, 0.45, 'sine', 0.42), noise(0.35, 2200, 180, 0.6, 0.28, 'lowpass')),
       lead: () => ok('lead', 450) && tone(1200, 1550, 0.07, 'triangle', 0.09),
+      gulp: () => ok('gulp', 300) && (tone(420, 55, 0.35, 'sine', 0.3), noise(0.3, 900, 120, 1, 0.15, 'lowpass')),
       final: () => { tone(55, 55, 1.0, 'sine', 0.34); tone(110, 108, 0.6, 'square', 0.1); noise(0.7, 4500, 260, 0.7, 0.18); },
       win: () => { [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.55, 'triangle', 0.18, i * 0.12)); tone(1568, 1568, 1.1, 'sine', 0.1, 0.5); },
       close: () => { try { ac.close(); } catch (e) { /* 무시 */ } },
@@ -111,7 +112,8 @@ const LUCKY = (() => {
     const hole = (x, hy, r, kind) => { const b = Bodies.circle(x, hy, r, { isStatic: true, isSensor: true }); b.kind = kind; b.ph = Math.random() * 6; b.open = true; solid.push(b); Composite.add(world, b); return b; };
     // 블랙홀 : 반지름 R 안의 구슬을 빙글빙글 끌어당긴다 (오래 붙잡힌 구슬은 잠깐 놓아 준다)
     const wells = [];
-    const well = (x, wy, R) => wells.push({ x, y: wy, R, ph: Math.random() * 4.5 });
+    // R = 끌어당기는 범위, vis = 보이는 크기, k = 힘, surge = SURGE 때 배수, swirl = 도는 힘(작을수록 곧장 빨려 듦)
+    const well = (x, wy, R, o = {}) => wells.push({ x, y: wy, R, vis: o.vis || R, k: o.k || 0.0008, surge: o.surge || 1.6, swirl: o.swirl == null ? 0.3 : o.swirl, ph: Math.random() * 4.5 });
     // 4.5초마다 0.9초 동안 강하게 빨아들인다 (SURGE) : 범위 1.8배 · 힘 2.6배
     const surgeOf = (w, ms) => { const c = (ms / 1000 + w.ph) % 4.5; return c < 0.9 ? Math.sin((c / 0.9) * Math.PI) : 0; };
     const pops = []; // 떠오르는 글자 { x, y, text, color, at }
@@ -172,6 +174,9 @@ const LUCKY = (() => {
     });
     // 4. 풍차 (두 날개 · 세 날개)
     zone('WINDMILLS', 45, () => {
+      plank(W * 0.24 - 10, y + 10, W * 0.48, 0.34, 'ramp');
+      bumper(W * 0.62, y + 70, 18);
+      y += 90;
       mill(W * 0.22, y + 100, 210, 0.0021); mill(W * 0.78, y + 100, 210, -0.0024); mill(W * 0.5, y + 320, 230, 0.0019, 3);
       well(W * 0.5, y + 110, 125);
       for (let x = 40; x < W; x += 90) peg(x, y + 210, 7);
@@ -216,7 +221,7 @@ const LUCKY = (() => {
       });
       [[W * 0.15, y - 420], [W * 0.85, y - 420], [W * 0.5, y - 100]].forEach(([bx, by]) => bumper(bx, by, 22));
       hole(W * 0.12, y - 200, 18, 'warp'); hole(W * 0.88, y - 260, 18, 'warp');
-      well(W * 0.5, y - 270, 120);
+      well(W * 0.5, y - 270, 950, { vis: 125, k: 0.00014, surge: 7, swirl: 0.12 });
       hole(W * 0.74, y - 120, 16, 'back');
       y += 40;
     });
@@ -314,7 +319,7 @@ const LUCKY = (() => {
     const countEl = ov.querySelector('.lk-count'), rankEl = ov.querySelector('.lk-rank'), finalEl = ov.querySelector('.lk-final');
     const startAt = performance.now();
     let arrived = 0; // GOAL 통과 순서
-    let lastLeft = null, lastLead = null, wasNear = false;
+    let lastLeft = null, lastLead = null, wasNear = false, eatAt = 0;
     let released = false, winner = null, raf = 0, last = startAt, simT = 0, camY = 0, slow = 1, rankAt = 0;
     const STEP = 1000 / 120;
     let acc = 0;
@@ -350,18 +355,39 @@ const LUCKY = (() => {
         // 화면 근처 블랙홀이 SURGE 를 시작하면 웅웅
         wells.forEach((w) => { const su = surgeOf(w, simT) > 0; if (su && !w.surging && released && Math.abs(w.y - (camY + 380)) < 700) SND.rumble(); w.surging = su; });
         if (released) balls.forEach((b) => {
-          if (b.done || (b.freeUntil && simT < b.freeUntil)) return;
-          let pulled = false;
+          if (b.done) return;
+          if (b.eat) {
+            // 블랙홀에 삼켜진 동안 : 중심에 붙잡혀 있다가 아래쪽으로 뱉어 낸다
+            const w = b.eat.w;
+            if (simT < b.eat.until) { Body.setPosition(b, { x: w.x, y: w.y }); Body.setVelocity(b, { x: 0, y: 0 }); return; }
+            b.collisionFilter.mask = b.eat.mask;
+            const a = rnd(0.4, Math.PI - 0.4), out = w.vis * 0.28 + r;
+            Body.setPosition(b, { x: w.x + Math.cos(a) * out, y: w.y + Math.sin(a) * out });
+            Body.setVelocity(b, { x: Math.cos(a) * 7, y: Math.sin(a) * 7 });
+            b.eat = null; b.freeUntil = simT + 1500; b.trail.length = 0; SND.whoosh();
+            return;
+          }
+          if (b.freeUntil && simT < b.freeUntil) return;
+          let near = false;
           wells.forEach((w) => {
+            if (b.eat) return;
             const su = surgeOf(w, simT), RR = w.R * (1 + su * 0.8);
             const dx = w.x - b.position.x, dy = w.y - b.position.y, d = Math.hypot(dx, dy);
-            if (d > RR || d < 6) return;
-            pulled = true;
-            const k = (1 - d / RR) * 0.00065 * (1 + su * 1.6) * b.mass;
-            Body.applyForce(b, b.position, { x: (dx / d) * k - (dy / d) * k * 0.9, y: (dy / d) * k + (dx / d) * k * 0.9 });
+            if (d > RR) return;
+            if (d < w.vis * 0.2) {
+              // 사건의 지평선에 닿으면 삼킨다
+              b.eat = { w, until: simT + 1100, mask: b.collisionFilter.mask };
+              b.collisionFilter.mask = 0;
+              if (performance.now() - eatAt > 700) { eatAt = performance.now(); pops.push({ x: w.x, y: w.y - w.vis * 0.35, text: `🌀 ${b.owner.name}`, color: '#d9a6ff', at: eatAt }); SND.gulp(); }
+              return;
+            }
+            const k = (1 - d / RR) * w.k * (1 + su * w.surge) * b.mass;
+            Body.applyForce(b, b.position, { x: (dx / d) * k - (dy / d) * k * w.swirl, y: (dy / d) * k + (dx / d) * k * w.swirl });
+            // 가까울수록 느려지며 빨려 든다
+            if (d < w.vis) { near = true; Body.setVelocity(b, { x: b.velocity.x * 0.99, y: b.velocity.y * 0.99 }); }
           });
-          b.wellT = pulled ? (b.wellT || 0) + STEP : 0;
-          if (b.wellT > 1800) { b.freeUntil = simT + 3000; b.wellT = 0; }
+          b.wellT = near ? (b.wellT || 0) + STEP : 0;
+          if (b.wellT > 2600) { b.freeUntil = simT + 2500; b.wellT = 0; }
         });
         Engine.update(engine, STEP);
         acc -= STEP; n++;
@@ -370,7 +396,7 @@ const LUCKY = (() => {
       // 구슬 정리 : 끼어 멈추면 살짝 튕기고, 흔적을 남긴다
       balls.forEach((b) => {
         if (b.position.y > GOAL && !b.done) { b.done = true; b.order = ++arrived; if (!winner) finish(b); }
-        if (released && !b.done && b.speed < 0.25) { b.still += dt; if (b.still > 1200) { Body.setVelocity(b, { x: rnd(-4, 4), y: -rnd(2, 5) }); b.still = 0; } } else b.still = 0;
+        if (released && !b.done && !b.eat && b.speed < 0.25) { b.still += dt; if (b.still > 1200) { Body.setVelocity(b, { x: rnd(-4, 4), y: -rnd(2, 5) }); b.still = 0; } } else b.still = 0;
         b.trail.push(b.position.x, b.position.y); if (b.trail.length > 16) b.trail.splice(0, 2);
       });
       // 카메라 : 1등 구슬을 따라 (끝나면 당첨 구슬)
@@ -450,6 +476,14 @@ const LUCKY = (() => {
       balls.forEach((b) => {
         if (b.position.y < camY - 40 || b.position.y > camY + viewH + 40) return;
         const c = colors[b.owner.id];
+        if (b.eat) {
+          const f = Math.max(0, (b.eat.until - simT) / 1100), ang = simT / 60;
+          const rr = (1 - f) * 0 + f * b.eat.w.vis * 0.18;
+          g.globalAlpha = 0.3 + f * 0.7; g.fillStyle = c;
+          g.beginPath(); g.arc(b.eat.w.x + Math.cos(ang) * rr, b.eat.w.y + Math.sin(ang) * rr * 0.5, r * Math.max(0.2, f), 0, Math.PI * 2); g.fill();
+          g.globalAlpha = 1;
+          return;
+        }
         g.strokeStyle = c; g.globalAlpha = 0.25; g.lineWidth = r * 0.9; g.lineCap = 'round';
         g.beginPath(); for (let k = 0; k < b.trail.length; k += 2) (k ? g.lineTo(b.trail[k], b.trail[k + 1]) : g.moveTo(b.trail[k], b.trail[k + 1])); g.stroke();
         g.globalAlpha = 1;
@@ -487,7 +521,17 @@ const LUCKY = (() => {
     // 블랙홀 : 빨려 들어가는 빛 알갱이 → 기울어진 강착원반(뒤쪽) → 사건의 지평선 → 광자 고리 → 강착원반(앞쪽)
     function drawWell(w, now) {
       if (!w.parts) w.parts = Array.from({ length: 46 }, () => ({ a: Math.random() * Math.PI * 2, r: Math.random(), s: 0.6 + Math.random() * 0.8 }));
-      const R = w.R, core = R * 0.2, t = now / 1000;
+      const R = w.vis, core = R * 0.2, t = now / 1000;
+      if (w.R > 400) {
+        const su0 = surgeOf(w, simT);
+        g.save(); g.translate(w.x, w.y);
+        for (let k = 0; k < 28; k++) {
+          const a = k * 0.224 + t * 0.4, life = ((t * (0.35 + su0 * 1.4) + k * 0.137) % 1), d0 = 140 + (1 - life) * 760;
+          g.strokeStyle = `rgba(190,140,255,${(0.05 + su0 * 0.35) * life})`; g.lineWidth = 1.5 + su0 * 2;
+          g.beginPath(); g.moveTo(Math.cos(a) * d0, Math.sin(a) * d0); g.lineTo(Math.cos(a + 0.12) * (d0 - 40 - su0 * 60), Math.sin(a + 0.12) * (d0 - 40 - su0 * 60)); g.stroke();
+        }
+        g.restore();
+      }
       // 바깥 빛 번짐
       const halo = g.createRadialGradient(w.x, w.y, core, w.x, w.y, R);
       halo.addColorStop(0, 'rgba(255,170,80,.28)'); halo.addColorStop(0.35, 'rgba(160,70,255,.16)'); halo.addColorStop(1, 'rgba(90,40,200,0)');
