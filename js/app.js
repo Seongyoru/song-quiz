@@ -483,6 +483,8 @@
     const t0 = performance.now();
     let armedAt = 0;
     const rate = L.kind === 'hl' ? lsRate() : 1;
+    // 유튜브 플레이어는 보통 2배까지라서, 3배는 2배로 틀면서 1초마다 1초씩 건너뛴다 (플레이어가 3배를 지원하면 그대로)
+    let skip = false, skipAt = 0;
     lsTimer = setInterval(() => {
       const now = performance.now();
       if (!armedAt) {
@@ -491,7 +493,7 @@
           const ours = ((x.p.getVideoData && x.p.getVideoData()) || {}).video_id === x.want;
           if (!x.seg) {
             // 광고 · 버퍼링 중이면 기다린다
-            if (s === 1 && ours && x.p.getDuration() > 0) { x.seg = lsSegment(x.p, x.i); x.p.setPlaybackRate(rate); x.p.seekTo(x.seg[0], true); x.seekAt = now; }
+            if (s === 1 && ours && x.p.getDuration() > 0) { x.seg = lsSegment(x.p, x.i); const can = (x.p.getAvailablePlaybackRates && x.p.getAvailablePlaybackRates()) || []; skip = rate > 2 && !can.includes(rate); x.p.setPlaybackRate(skip ? 2 : rate); x.p.seekTo(x.seg[0], true); x.seekAt = now; }
           } else if (!x.ok) {
             if (s === 1 && Math.abs(cur - x.seg[0]) < 1.2) { x.ok = true; if (st.length > 1) { x.p.pauseVideo(); x.p.seekTo(x.seg[0], true); } } else if (now - x.seekAt > 2500) { x.p.seekTo(x.seg[0], true); x.seekAt = now; }
           }
@@ -506,7 +508,8 @@
         } else if (now - t0 > 3500) $('#lsMsg').textContent = T('광고가 나오는 중일 수 있어요. 가리개를 열고 건너뛰기를 눌러 주세요');
         return;
       }
-      const limit = (L.secs / (L.kind === 'hl' ? 1 : 1)) * 1000 + 1500;
+      if (skip && now - (skipAt || armedAt) >= 1000) { skipAt = now; st.forEach((x) => x.p.seekTo(x.p.getCurrentTime() + 1, true)); }
+      const limit = L.secs * 1000 + 1500;
       const over = st.every((x) => x.p.getCurrentTime() >= x.seg[1] || x.p.getPlayerState() === 0);
       if (over || now - armedAt > limit) { lsStop(); $('#lsMsg').textContent = ''; }
     }, 60);

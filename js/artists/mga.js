@@ -28,7 +28,7 @@ ARTISTS.push({
     '日々と君', 'WaLL FloWeR', 'リスキーゲーム', '道徳と皿', '恋と吟', 'えほん', 'おもちゃの兵隊', 'FACTORY', 'JOURNEY', 'スマイロブドリーマ',
     'SwitCh', 'On My MiND', 'WHOO WHOO WHOO', 'はじまり', 'SPLASH!!!', 'Folktale', 'How-to', '延々', 'norn', 'Doodle',
     'CONFLICT', 'アンゼンパイ', 'L.P', 'VIP', 'ゼンマイ', '愛情と矛先', '藍', 'キコリ時計', '私', 'No.7', 'ミスカサズ', 'SimPle', 'Hug', 'HeLLo',
-    '庶幾の唄', 'umbrella', 'ノニサクウタ', 'ツキマシテハ', 'Oz', 'Lion', '絶世生物', 'soFt-dRink', 'うブ', '光のうた', 'Log', 'They are',
+    '庶幾の唄', 'ノニサクウタ', 'ツキマシテハ', 'Oz', 'Lion', '絶世生物', 'soFt-dRink', 'うブ', '光のうた', 'Log', 'They are',
     'REVERSE', 'Coffee', 'ア・プリオリ', '灯火', '月とアネモネ', 'Viking', 'ProPose', 'クダリ', 'Ke-Mo Sah-Bee', '嘘じゃないよ', 'Soup', 'Circle',
     'スターダム', 'Part of me', 'Blizzard', 'アンラブレス', 'Loneliness', '橙', 'BFF', 'Feeling',
   ],
