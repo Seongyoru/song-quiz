@@ -31,12 +31,13 @@ const ROOM = (() => {
   const MARBLES = 3;
   const mOf = (p) => (p.marbles != null ? p.marbles : MARBLES);
 
-  async function connect(onMsg, subs) {
+  // will : 창을 닫거나 연결이 끊기면 브로커가 대신 보내 주는 메시지 (참가자의 '연결 끊김')
+  async function connect(onMsg, subs, will) {
     await loadScript(MQTT_JS);
     for (const url of BROKERS) {
       try {
         const c = await new Promise((ok, no) => {
-          const cl = window.mqtt.connect(url, { clientId: `sq_${myId}_${Math.random().toString(36).slice(2, 6)}`, clean: true, connectTimeout: 7000, reconnectPeriod: 2000, keepalive: 30 });
+          const cl = window.mqtt.connect(url, { clientId: `sq_${myId}_${Math.random().toString(36).slice(2, 6)}`, clean: true, connectTimeout: 7000, reconnectPeriod: 2000, keepalive: 20, ...(will ? { will } : {}) });
           const t = setTimeout(() => { cl.end(true); no(new Error('timeout')); }, 8000);
           cl.once('connect', () => { clearTimeout(t); ok(cl); });
           cl.once('error', () => { clearTimeout(t); cl.end(true); no(new Error('error')); });
@@ -71,6 +72,11 @@ const ROOM = (() => {
       S.players[m.id] = { name, score: prev ? prev.score : 0, marbles: prev && prev.marbles != null ? prev.marbles : MARBLES };
       pub();
       if (isNew) toastBig(`👋 ${name}`, 1200);
+    } else if (m.t === 'leave' && m.id && S.players[m.id]) {
+      // 나가기 = 목록에서 뺌, 연결 끊김(창 닫음 · 인터넷) = 회색으로 남겨 두고 다시 들어오면 그대로
+      if (m.soft) S.players[m.id].off = true; else delete S.players[m.id];
+      if (S.locked && S.locked.id === m.id) { S.locked = null; hideBig(); }
+      pub();
     } else if (m.t === 'buzz' && m.id && S.players[m.id]) {
       if (!S.open || S.locked || S.blocked.includes(m.id) || m.round !== S.round) return;
       S.locked = { id: m.id, name: S.players[m.id].name };
@@ -86,6 +92,7 @@ const ROOM = (() => {
     role = 'host';
     code = saved ? saved.code : newCode();
     S = saved ? saved.S : blank();
+    S.drawing = false; // 새로 고침으로 끊긴 럭키드로우가 '진행 중' 으로 남지 않게
     render();
     try { client = await connect(onHostMsg, [topic(code, 'in')]); } catch (e) { role = null; render(); alert(T('방 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요')); return; }
     pub();
@@ -140,7 +147,7 @@ const ROOM = (() => {
           if (P && P.locked && P.locked.id === myId && !(was && was.locked && was.locked.id === myId)) { try { navigator.vibrate && navigator.vibrate([80, 40, 160]); } catch (e) { /* 무시 */ } sfx('correct', 0.5); }
           render();
         }
-      }, [topic(code, 'host')]);
+      }, [topic(code, 'host')], { topic: topic(code, 'in'), payload: JSON.stringify({ t: 'leave', id: myId, soft: true }), qos: 1, retain: false });
     } catch (e) { role = null; render(); alert(T('방 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요')); return; }
     sendJoin();
     render();
@@ -155,8 +162,10 @@ const ROOM = (() => {
 
   function leave(quiet) {
     if (client) {
+      // 참가자가 나가면 출제자 목록에서 바로 빠지게 알리고, 보낸 뒤에 연결을 끊는다
+      if (role === 'player' && !quiet) { const c = client; c.publish(topic(code, 'in'), JSON.stringify({ t: 'leave', id: myId }), { qos: 1 }, () => { try { c.end(); } catch (e) { /* 무시 */ } }); client = null; }
       if (role === 'host' && !quiet) { client.publish(topic(code, 'host'), '', { qos: 1, retain: true }); store.set('sq_room_host', null); }
-      try { client.end(true); } catch (e) { /* 무시 */ }
+      if (client) { try { client.end(true); } catch (e) { /* 무시 */ } }
     }
     client = null; connected = false;
     if (!quiet) { role = null; code = ''; S = null; P = null; hideBig(); render(); }
@@ -190,7 +199,7 @@ const ROOM = (() => {
     // 출제자 막대
     bar.hidden = role !== 'host';
     if (role === 'host' && S) {
-      const n = Object.keys(S.players).length;
+      const n = Object.values(S.players).filter((p) => !p.off).length;
       const status = !connected ? T('연결 중...') : S.locked ? `🔔 ${esc(S.locked.name)}` : S.open ? T('버저 열림') : T('버저 닫힘');
       bar.innerHTML = `<button type="button" class="rb-code" data-act="dlg">${esc(T('방'))} <b>${esc(code)}</b> · ${esc(T('{n}명', { n }))}</button>
         <span class="rb-status ${S.locked ? 'hot' : S.open ? 'open' : ''}">${S.locked ? status : esc(status)}</span>
@@ -227,7 +236,7 @@ const ROOM = (() => {
         <div class="room-join"><div class="room-qr" id="roomQr" data-code=""></div>
           <div><p>${esc(T('휴대폰으로 QR을 찍거나 주소에 들어가서 방 코드를 넣어 주세요'))}</p>
           <button type="button" class="chip" data-act="copy">${esc(T('참가 링크 복사'))}</button></div></div>
-        <ol class="room-list">${list.map((p) => `<li><span>${esc(p.name)}</span>
+        <ol class="room-list">${list.map((p) => `<li class="${p.off ? 'off' : ''}"><span>${esc(p.name)}${p.off ? ` <small>${esc(T('연결 끊김'))}</small>` : ''}</span>
           <em>${esc(T('점수'))}</em><button type="button" class="chip" data-act="minus" data-id="${esc(p.id)}">−</button><b>${p.score}</b><button type="button" class="chip" data-act="plus" data-id="${esc(p.id)}">+</button>
           <em>🔮</em><button type="button" class="chip" data-act="mminus" data-id="${esc(p.id)}">−</button><b>${mOf(p)}</b><button type="button" class="chip" data-act="mplus" data-id="${esc(p.id)}">+</button></li>`).join('') || `<li class="empty">${esc(T('아직 들어온 사람이 없어요'))}</li>`}</ol>
         ${S.draw ? `<p class="room-draw">${esc(T('🎉 지난 럭키드로우 당첨 : {name}', { name: S.draw.name }))}</p>` : ''}

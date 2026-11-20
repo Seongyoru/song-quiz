@@ -92,13 +92,24 @@
 
     <!-- 듣기 퀴즈 : 인트로 · 배속(하이라이트) · 아웃트로 -->
     <div id="lsView" class="panel" hidden>
-      <div class="ud-kind" id="lsKind">
-        <button type="button" data-kind="intro" data-t="인트로 Q"></button>
-        <button type="button" data-kind="hl" data-t="배속 Q"></button>
-        <button type="button" data-kind="outro" data-t="아웃트로 Q"></button>
-        <button type="button" data-kind="mix" data-t="동시 재생 Q"></button>
-        <button type="button" data-kind="rev" data-t="리버스 Q"></button>
-        <button type="button" data-kind="lyric" data-t="가사 Q"></button>
+      <div class="ls-kinds" id="lsKind">
+        <button type="button" data-kind="intro"><i>🎬</i><b data-t="인트로 Q"></b><small data-t="곡의 처음"></small></button>
+        <button type="button" data-kind="hl"><i>⚡</i><b data-t="배속 Q"></b><small data-t="느리게 · 빠르게"></small></button>
+        <button type="button" data-kind="outro"><i>🏁</i><b data-t="아웃트로 Q"></b><small data-t="곡의 마지막"></small></button>
+        <button type="button" data-kind="mix"><i>🎧</i><b data-t="동시 재생 Q"></b><small data-t="2~3곡 한꺼번에"></small></button>
+        <button type="button" data-kind="lyric"><i>🗣️</i><b data-t="가사 Q"></b><small data-t="가사 읽어 주기"></small></button>
+      </div>
+      <div class="ls-opt" id="lsRateBox" hidden>
+        <span class="ls-opt-k" data-t="재생 속도"></span>
+        <div class="seg" id="lsRateBtns">
+          <button type="button" data-v="0.25">0.25x</button><button type="button" data-v="0.5">0.5x</button><button type="button" data-v="0.75">0.75x</button><button type="button" data-v="2">2x</button><button type="button" data-v="3">3x</button>
+        </div>
+      </div>
+      <div class="ls-opt" id="lsMixBox" hidden>
+        <span class="ls-opt-k" data-t="동시에 틀 곡 수"></span>
+        <div class="seg" id="lsMixBtns">
+          <button type="button" data-v="2" data-t="2곡"></button><button type="button" data-v="3" data-t="3곡"></button>
+        </div>
       </div>
       <div class="q-bar">
         <span class="q-no" id="lsNo"></span>

@@ -637,3 +637,48 @@ body.hard .ls-player { box-shadow: 0 0 0 3px #e0484f, 0 12px 40px rgba(224, 72, 
 body.hard .lvl { border-color: rgba(224, 72, 79, .45); }
 /* 일반 : 지금 그대로, 살짝 부드럽게 */
 body.normal .ls-player { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 30%, transparent); }
+
+/* ---------- 듣기 퀴즈 종류 타일 · 속도 · 곡 수 ---------- */
+#lsRate, #lsMix { display: none !important; }
+.ls-kinds { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+.ls-kinds button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px 10px; border-radius: 16px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); transition: transform .15s, box-shadow .15s, background .15s; }
+.ls-kinds button:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0, 0, 0, .08); }
+.ls-kinds button i { font-style: normal; font-size: 24px; line-height: 1.2; }
+.ls-kinds button b { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.ls-kinds button small { font-size: 11px; color: var(--ink2); white-space: nowrap; }
+.ls-kinds button.on { background: linear-gradient(135deg, var(--ac), var(--ac2)); border-color: transparent; color: #fff; box-shadow: 0 8px 22px color-mix(in srgb, var(--ac) 40%, transparent); transform: translateY(-2px); }
+.ls-kinds button.on small { color: rgba(255, 255, 255, .85); }
+@media (max-width: 720px) { .ls-kinds { grid-template-columns: repeat(3, 1fr); } }
+.ls-opt { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 12px; padding: 10px 14px; border-radius: 16px; background: color-mix(in srgb, var(--ac) 8%, #fff); border: 1.5px solid color-mix(in srgb, var(--ac) 25%, transparent); }
+.ls-opt-k { font-weight: 800; font-size: 15px; color: var(--ac); }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.seg button { min-width: 72px; padding: 10px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font: 700 17px var(--fd); color: var(--ink); }
+.seg button.on { background: var(--ac); border-color: var(--ac); color: #fff; box-shadow: 0 6px 14px color-mix(in srgb, var(--ac) 35%, transparent); }
+body.big .ls-kinds button { padding: 16px 8px 14px; }
+body.big .ls-kinds button i { font-size: 30px; }
+body.big .ls-kinds button b { font-size: 19px; }
+body.big .seg button { font-size: 21px; padding: 12px 20px; }
+.room-list li.off { opacity: .5; }
+.room-list li.off small { font-size: 11px; color: #e0484f; font-weight: 700; }
+
+/* ---------- 럭키드로우 (긴 코스 · 카메라) ---------- */
+.lucky { position: fixed; inset: 0; z-index: 70; background: #0d1024; display: block; padding: 0; }
+.lk-cv { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lk-hud { position: absolute; left: 16px; top: 16px; width: 240px; padding: 14px 16px; border-radius: 18px; background: rgba(13, 16, 36, .72); color: #fff; backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, .12); }
+.lk-title { font: 700 20px var(--fd); }
+.lk-title small { font: 600 12px var(--fk); opacity: .7; margin-left: 4px; }
+.lk-rank { margin-top: 10px; display: grid; gap: 6px; }
+.lk-rank li { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.lk-rank li i { font-style: normal; width: 16px; color: #ffd166; font-family: var(--fd); }
+.lk-rank li b { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.lk-rank li em { margin-left: auto; font-style: normal; font-family: var(--fd); opacity: .75; }
+.lk-mini { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); width: 36px; height: min(60vh, 420px); border-radius: 18px; background: rgba(255, 255, 255, .06); }
+.lk-count { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font: 700 140px var(--fd); color: #fff; text-shadow: 0 0 40px rgba(91, 108, 255, .9); pointer-events: none; }
+.lk-count.go { color: #ffd166; text-shadow: 0 0 40px rgba(255, 209, 102, .9); }
+.lk-final { position: absolute; left: 0; right: 0; top: 12%; text-align: center; font: 700 64px var(--fd); letter-spacing: 12px; color: #ff5d5d; text-shadow: 0 0 30px rgba(255, 93, 93, .8); animation: lkpulse .6s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes lkpulse { from { opacity: .45; transform: scale(.96); } to { opacity: 1; transform: scale(1.04); } }
+.lucky .lk-win { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); width: min(520px, 90vw); padding: 26px 20px; border-radius: 26px; background: rgba(13, 16, 36, .88); border: 2px solid #ffd166; box-shadow: 0 0 60px rgba(255, 209, 102, .45); text-align: center; animation: pop .5s cubic-bezier(.3, 1.4, .5, 1); }
+.lucky .lk-win small { display: block; font-weight: 800; color: #ffd166; font-size: 20px; }
+.lucky .lk-win b { display: block; margin-top: 6px; font: 700 clamp(40px, 7vw, 72px)/1.1 var(--fd); word-break: break-all; }
+.lucky .lk-close { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); width: auto; margin: 0; padding: 12px 34px; }
+@media (max-width: 720px) { .lk-hud { width: auto; right: 64px; } .lk-count { font-size: 96px; } .lk-final { font-size: 40px; } }

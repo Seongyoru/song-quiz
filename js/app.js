@@ -312,7 +312,8 @@
   let ytApi = null, yt = null, lsTimer = 0, lsWatch = 0;
   const players = {}; // div id → Promise<YT.Player>
   const ready = {}; // div id → 준비된 YT.Player (멈춤은 바로 해야 해서 Promise 를 거치지 않는다)
-  const lsKind = () => store.get('sq_lskind', 'intro');
+  // 리버스 Q 는 뺐다 (예전에 고른 값이면 인트로로)
+  const lsKind = () => { const k = store.get('sq_lskind', 'intro'); return ['intro', 'hl', 'outro', 'mix', 'lyric'].includes(k) ? k : 'intro'; };
   const lsRate = () => Number($('#lsRate').value) || 2;
   const lsMixN = () => Number($('#lsMix').value) || 2;
   const YT_KINDS = ['intro', 'hl', 'outro', 'mix'];
@@ -439,8 +440,10 @@
     const done = L.state !== 'play';
     const yk = YT_KINDS.includes(L.kind);
     $$('#lsKind [data-kind]').forEach((b) => b.classList.toggle('on', b.dataset.kind === L.kind));
-    $('#lsRate').hidden = L.kind !== 'hl';
-    $('#lsMix').hidden = L.kind !== 'mix';
+    $('#lsRateBox').hidden = L.kind !== 'hl';
+    $('#lsMixBox').hidden = L.kind !== 'mix';
+    $$('#lsRateBtns [data-v]').forEach((b) => b.classList.toggle('on', b.dataset.v === $('#lsRate').value));
+    $$('#lsMixBtns [data-v]').forEach((b) => b.classList.toggle('on', b.dataset.v === $('#lsMix').value));
     $('#rvBox').hidden = L.kind !== 'rev';
     $('#lyBox').hidden = L.kind !== 'lyric';
     $('#rvNote').textContent = RV.files.length ? T('파일 {n}개 · 파일은 이 브라우저 안에서만 쓰고 어디에도 올리지 않아요', { n: RV.files.length }) : T('파일은 이 브라우저 안에서만 쓰고 어디에도 올리지 않아요');
@@ -894,6 +897,12 @@
   $('#lsInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); lsCheck(); } });
   $$('#lsKind [data-kind]').forEach((b) => b.addEventListener('click', () => { store.set('sq_lskind', b.dataset.kind); if (L) L.used = new Set(); newListen('same'); }));
   $('#lsRate').addEventListener('change', () => store.set('sq_lsrate', $('#lsRate').value));
+  // 큰 버튼 줄 → 숨겨 둔 select 값을 바꾸고 change 를 보낸다
+  [['#lsRateBtns', '#lsRate'], ['#lsMixBtns', '#lsMix']].forEach(([box, sel]) => $(box).addEventListener('click', (e) => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    $(sel).value = b.dataset.v; $(sel).dispatchEvent(new Event('change'));
+    $$(`${box} [data-v]`).forEach((x) => x.classList.toggle('on', x === b));
+  }));
   $('#lsMix').addEventListener('change', () => { store.set('sq_lsmix', $('#lsMix').value); if (L && L.kind === 'mix') newListen('same'); });
   $('#rvFiles').addEventListener('change', (e) => {
     RV.files = [...e.target.files]; RV.buf.clear();
