@@ -134,7 +134,7 @@ const I18N = (() => {
     '방 만들기': ['ルームを作る', 'Create room'],
     '출제자': ['出題者', 'Host'],
     '참가자': ['参加者', 'Player'],
-    '🔄 처음부터': ['🔄 リセット', '🔄 Reset'],
+    '처음부터': ['リセット', 'Reset'],
     '점수 · 문제 번호 · Up & Down 최고 기록을 모두 지우고 처음부터 시작할까요?': ['スコア・問題番号・Up & Downのベスト記録をすべて消して最初から始めますか？', 'Clear all scores, question numbers and Up & Down best records and start over?'],
     '럭키드로우': ['ラッキードロー', 'Lucky draw'],
     '🎰 럭키드로우': ['🎰 ラッキードロー', '🎰 Lucky draw'],

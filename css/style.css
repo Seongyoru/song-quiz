@@ -693,3 +693,13 @@ body.big .seg button { font-size: 21px; padding: 12px 20px; }
 .top { position: relative; }
 .reset-btn { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); white-space: nowrap; font-weight: 800; }
 @media (max-width: 640px) { .reset-btn { position: static; transform: none; order: 3; } .top { flex-wrap: wrap; } }
+
+/* 처음부터 버튼 : 아이콘 + 글자, 크게 */
+.reset-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px 10px 14px; border-radius: 99px; border: 0; background: linear-gradient(135deg, var(--ac, #3fae3a), var(--ac2, #a6e23c)); color: #fff; font: 800 16px var(--fk); box-shadow: 0 8px 20px color-mix(in srgb, var(--ac, #3fae3a) 35%, transparent); cursor: pointer; transition: transform .15s, box-shadow .15s; top: 14px; }
+.reset-btn svg { width: 22px; height: 22px; transition: transform .5s cubic-bezier(.3, 1.4, .5, 1); }
+.reset-btn:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 12px 26px color-mix(in srgb, var(--ac, #3fae3a) 45%, transparent); }
+.reset-btn:hover svg { transform: rotate(300deg); }
+.reset-btn:active svg { transform: rotate(360deg); }
+body.big .reset-btn { font-size: 19px; padding: 12px 24px 12px 16px; }
+body.big .reset-btn svg { width: 26px; height: 26px; }
+@media (max-width: 640px) { .reset-btn:hover { transform: translateY(-2px); } }
