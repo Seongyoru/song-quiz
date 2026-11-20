@@ -50,6 +50,15 @@ const LUCKY = (() => {
       boom: () => ok('boom', 150) && (tone(150, 42, 0.45, 'sine', 0.42), noise(0.35, 2200, 180, 0.6, 0.28, 'lowpass')),
       lead: () => ok('lead', 450) && tone(1200, 1550, 0.07, 'triangle', 0.09),
       gulp: () => ok('gulp', 300) && (tone(420, 55, 0.35, 'sine', 0.3), noise(0.3, 900, 120, 1, 0.15, 'lowpass')),
+      // 구슬끼리 : 세게 부딪힐수록 크게 (v = 상대 속도)
+      click: (v) => ok('click', 28) && tone(2200 + Math.random() * 900, 1800, 0.035, 'triangle', Math.min(0.16, 0.02 + v * 0.012)),
+      tick: () => ok('tick', 45) && tone(3200 + Math.random() * 1400, 2600, 0.025, 'sine', 0.05),
+      thud: (v) => ok('thud', 60) && (tone(180 + Math.random() * 60, 90, 0.08, 'sine', Math.min(0.2, 0.04 + v * 0.015)), noise(0.05, 1600, 400, 1, 0.04, 'lowpass')),
+      clack: () => ok('clack', 70) && (tone(620, 300, 0.06, 'square', 0.06), noise(0.05, 3000, 1200, 2, 0.05)),
+      flip: () => ok('flip', 90) && (tone(240, 520, 0.09, 'sawtooth', 0.09), noise(0.06, 2500, 800, 1.5, 0.06)),
+      zap: () => ok('zap', 90) && (tone(400, 1800, 0.18, 'sawtooth', 0.09), tone(800, 2600, 0.14, 'sine', 0.08, 0.03), noise(0.2, 1200, 6000, 1.2, 0.1)),
+      blast: () => ok('blast', 120) && (tone(90, 30, 0.7, 'sawtooth', 0.3), tone(160, 40, 0.5, 'sine', 0.45), noise(0.6, 3000, 120, 0.5, 0.4, 'lowpass')),
+      spit: () => ok('spit', 200) && (tone(80, 520, 0.25, 'sine', 0.25), noise(0.2, 400, 3000, 1, 0.12)),
       final: () => { tone(55, 55, 1.0, 'sine', 0.34); tone(110, 108, 0.6, 'square', 0.1); noise(0.7, 4500, 260, 0.7, 0.18); },
       win: () => { [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.55, 'triangle', 0.18, i * 0.12)); tone(1568, 1568, 1.1, 'sine', 0.1, 0.5); },
       close: () => { try { ac.close(); } catch (e) { /* 무시 */ } },
@@ -114,7 +123,7 @@ const LUCKY = (() => {
     // 블랙홀 : 반지름 R 안의 구슬을 빙글빙글 끌어당긴다 (오래 붙잡힌 구슬은 잠깐 놓아 준다)
     const wells = [];
     // R = 끌어당기는 범위, vis = 보이는 크기, k = 힘, surge = SURGE 때 배수, swirl = 도는 힘(작을수록 곧장 빨려 듦)
-    const well = (x, wy, R, o = {}) => wells.push({ x, y: wy, R, vis: o.vis || R, k: o.k || 0.0008, surge: o.surge || 1.6, swirl: o.swirl == null ? 0.3 : o.swirl, ph: Math.random() * 4.5 });
+    const well = (x, wy, R, o = {}) => wells.push({ x, y: wy, R, vis: o.vis || R, k: o.k || 0.0026, surge: o.surge || 1.5, swirl: o.swirl == null ? 0.15 : o.swirl, slow: o.slow == null ? 1 : o.slow, dir: o.dir || 1, ph: Math.random() * 4.5 });
     // 4.5초마다 0.9초 동안 강하게 빨아들인다 (SURGE) : 범위 1.8배 · 힘 2.6배
     const surgeOf = (w, ms) => { const c = (ms / 1000 + w.ph) % 4.5; return c < 0.9 ? Math.sin((c / 0.9) * Math.PI) : 0; };
     const pops = []; // 떠오르는 글자 { x, y, text, color, at }
@@ -179,7 +188,7 @@ const LUCKY = (() => {
       bumper(W * 0.62, y + 70, 18);
       y += 90;
       mill(W * 0.22, y + 100, 210, 0.0021); mill(W * 0.78, y + 100, 210, -0.0024); mill(W * 0.5, y + 320, 230, 0.0019, 3);
-      well(W * 0.5, y + 110, 125);
+      well(W * 0.5, y + 110, 210, { vis: 125, dir: -1 }); // 첫 블랙홀은 반대 방향으로 돈다
       for (let x = 40; x < W; x += 90) peg(x, y + 210, 7);
       y += 470;
     });
@@ -199,7 +208,7 @@ const LUCKY = (() => {
     zone('SLIDERS', 330, () => {
       for (let k = 0; k < 2; k++, y += 170) {
         slider(y, 300, W / 2 - 170, 0.0016 + k * 0.0005);
-        if (k === 1) well(W * (Math.random() < 0.5 ? 0.22 : 0.78), y - 80, 140);
+        if (k === 1) well(W * (Math.random() < 0.5 ? 0.22 : 0.78), y - 80, 220, { vis: 135 });
         for (let x = k % 2 ? 80 : 40; x < W; x += 110) peg(x, y + 85, 7);
       }
       flipper(40, y + 20, 170, 1, 0.006); flipper(W - 40, y + 20, 170, -1, 0.0065);
@@ -222,7 +231,7 @@ const LUCKY = (() => {
       });
       [[W * 0.15, y - 420], [W * 0.85, y - 420], [W * 0.5, y - 100]].forEach(([bx, by]) => bumper(bx, by, 22));
       hole(W * 0.12, y - 200, 18, 'warp'); hole(W * 0.88, y - 260, 18, 'warp');
-      well(W * 0.5, y - 270, 950, { vis: 125, k: 0.00014, surge: 7, swirl: 0.12 });
+      well(W * 0.5, y - 270, 620, { vis: 125, k: 0.0011, surge: 3, swirl: 0.08, slow: 0.15 });
       hole(W * 0.74, y - 120, 16, 'back');
       y += 40;
     });
@@ -246,7 +255,7 @@ const LUCKY = (() => {
     Events.on(engine, 'collisionStart', (ev) => ev.pairs.forEach(({ bodyA, bodyB }) => {
       const pad = bodyA.kind === 'boost' ? bodyA : bodyB.kind === 'boost' ? bodyB : null;
       const ball = pad === bodyA ? bodyB : bodyA;
-      if (pad && ball.owner) { Body.setVelocity(ball, { x: pad.dir.x, y: pad.dir.y }); flash.set(pad, performance.now()); SND.whoosh(); }
+      if (pad && ball.owner) { Body.setVelocity(ball, { x: pad.dir.x, y: pad.dir.y }); flash.set(pad, performance.now()); SND.zap(); }
       // 셔터에 부딪히면 충격파 : 반경 130 안 구슬을 바깥으로 튕겨 낸다 (셔터마다 0.35초에 한 번)
       const sh = bodyA.kind === 'shutter' ? bodyA : bodyB.kind === 'shutter' ? bodyB : null;
       const sb = sh === bodyA ? bodyB : bodyA;
@@ -305,7 +314,42 @@ const LUCKY = (() => {
     // 범퍼에 닿으면 세게 튕겨 낸다
     const flash = new Map();
     Events.on(engine, 'collisionStart', (ev) => {
+      const now = performance.now();
+      const seen = (bd) => bd.position.y > camY - 60 && bd.position.y < camY + 900;
       ev.pairs.forEach(({ bodyA, bodyB }) => {
+        // 진자(마지막 입구의 작은 막대) : 부딪힌 구슬을 아주 세게 위로 날려 보낸다
+        const pd = bodyA.kind === 'pend' ? bodyA : bodyB.kind === 'pend' ? bodyB : null;
+        const pb = pd === bodyA ? bodyB : bodyA;
+        // 구슬마다 3초에 한 번까지 (계속 날리면 아무도 결승을 못 지나간다)
+        if (pd && pb.owner && !pb.done && (!pb.blastAt || now - pb.blastAt > 3000)) {
+          pb.blastAt = now;
+          Body.setVelocity(pb, { x: rnd(-10, 10), y: -rnd(30, 36) });
+          waves.push({ x: pb.position.x, y: pb.position.y, at: now });
+          pops.push({ x: pb.position.x, y: pb.position.y - 30, text: `💥 ${pb.owner.name}`, color: '#ff8a3d', at: now });
+          SND.blast();
+          return;
+        }
+        if (bodyA.owner && bodyB.owner) {
+          // 날아가는 구슬에 맞으면 사방으로 튄다
+          [[bodyA, bodyB], [bodyB, bodyA]].forEach(([hit, other]) => {
+            if (hit.blastAt && now - hit.blastAt < 1400 && !other.done) {
+              const dx = other.position.x - hit.position.x, dy = other.position.y - hit.position.y, d = Math.hypot(dx, dy) || 1;
+              Body.setVelocity(other, { x: (dx / d) * 20 + rnd(-3, 3), y: (dy / d) * 20 - 6 });
+            }
+          });
+          const v = Math.hypot(bodyA.velocity.x - bodyB.velocity.x, bodyA.velocity.y - bodyB.velocity.y);
+          if (v > 1.5 && seen(bodyA)) SND.click(v);
+          return;
+        }
+        const ball0 = bodyA.owner ? bodyA : bodyB.owner ? bodyB : null;
+        const wall0 = ball0 === bodyA ? bodyB : bodyA;
+        if (ball0 && seen(ball0)) {
+          const v = ball0.speed;
+          if (wall0.kind === 'peg') { if (v > 1) SND.tick(); }
+          else if (wall0.kind === 'mill' || wall0.kind === 'hub') SND.clack();
+          else if (wall0.kind === 'flipper') SND.flip();
+          else if (wall0.kind && wall0.kind !== 'bumper' && wall0.kind !== 'boost' && wall0.kind !== 'warp' && wall0.kind !== 'back' && v > 2) SND.thud(v);
+        }
         const bump = bodyA.kind === 'bumper' ? bodyA : bodyB.kind === 'bumper' ? bodyB : null;
         const ball = bump === bodyA ? bodyB : bodyA;
         if (!bump || !ball.owner) return;
@@ -364,8 +408,8 @@ const LUCKY = (() => {
             b.collisionFilter.mask = b.eat.mask;
             const a = rnd(0.4, Math.PI - 0.4), out = w.vis * 0.28 + r;
             Body.setPosition(b, { x: w.x + Math.cos(a) * out, y: w.y + Math.sin(a) * out });
-            Body.setVelocity(b, { x: Math.cos(a) * 7, y: Math.sin(a) * 7 });
-            b.eat = null; b.freeUntil = simT + 1500; b.trail.length = 0; SND.whoosh();
+            Body.setVelocity(b, { x: Math.cos(a) * 14, y: Math.sin(a) * 14 });
+            b.eat = null; b.freeUntil = simT + 3000; b.trail.length = 0; SND.spit();
             return;
           }
           if (b.freeUntil && simT < b.freeUntil) return;
@@ -382,13 +426,21 @@ const LUCKY = (() => {
               if (performance.now() - eatAt > 700) { eatAt = performance.now(); pops.push({ x: w.x, y: w.y - w.vis * 0.35, text: `🌀 ${b.owner.name}`, color: '#d9a6ff', at: eatAt }); SND.gulp(); }
               return;
             }
-            const k = (1 - d / RR) * w.k * (1 + su * w.surge) * b.mass;
-            Body.applyForce(b, b.position, { x: (dx / d) * k - (dy / d) * k * w.swirl, y: (dy / d) * k + (dx / d) * k * w.swirl });
+            // 소용돌이 : 속도를 「블랙홀을 도는 방향 + 중심 쪽」으로 휘게 만든다 → 회전하면서 나선으로 빨려 든다
+            const f = 1 - d / RR;                                   // 가장자리 0 → 중심 1
+            const pow = (w.k / 0.0026) * (1 + su * w.surge);        // 블랙홀마다 세기 (SURGE 때 커짐)
+            const vt = (3 + 8 * f) * Math.min(1.6, pow), vr = (1.2 + 4.5 * f) * Math.min(2.2, pow);
+            const ux = dx / d, uy = dy / d;                          // 중심 쪽 단위 벡터
+            const wx = -uy * vt * w.dir + ux * vr, wy = ux * vt * w.dir + uy * vr;   // 원하는 속도 (접선 + 안쪽, dir 로 회전 방향)
+            const a = Math.min(0.28, (0.02 + 0.09 * f) * pow);
+            // 중력장 안을 지나는 구슬은 모두 조금 느려진다 (가장자리 1.5% → 중심 쪽 4%)
+            const slowK = 1 - (0.015 + 0.025 * f) * Math.min(1, pow) * w.slow;
+            Body.setVelocity(b, { x: (b.velocity.x + (wx - b.velocity.x) * a) * slowK, y: (b.velocity.y + (wy - b.velocity.y) * a) * slowK });
             // 가까울수록 느려지며 빨려 든다
-            if (d < w.vis) { near = true; Body.setVelocity(b, { x: b.velocity.x * 0.99, y: b.velocity.y * 0.99 }); }
+            if (d < w.vis) near = true;
           });
           b.wellT = near ? (b.wellT || 0) + STEP : 0;
-          if (b.wellT > 2600) { b.freeUntil = simT + 2500; b.wellT = 0; }
+          if (b.wellT > 5000) { b.freeUntil = simT + 2500; b.wellT = 0; }
         });
         Engine.update(engine, STEP);
         acc -= STEP; n++;
@@ -540,7 +592,7 @@ const LUCKY = (() => {
       // 나선을 그리며 빨려 드는 알갱이
       w.parts.forEach((q) => {
         const life = (q.r - t * 0.18 * q.s) % 1, rr = (life < 0 ? life + 1 : life);
-        const rad = core + rr * (R - core), ang = q.a + (1 - rr) * 6 + t * 1.6 * q.s;
+        const rad = core + rr * (R - core), ang = q.a + ((1 - rr) * 6 + t * 1.6 * q.s) * -w.dir;
         g.fillStyle = `rgba(255,${180 + rr * 60},${120 + rr * 120},${0.25 + (1 - rr) * 0.7})`;
         g.beginPath(); g.arc(w.x + Math.cos(ang) * rad, w.y + Math.sin(ang) * rad * 0.55, 1.2 + (1 - rr) * 1.6, 0, Math.PI * 2); g.fill();
       });
