@@ -176,7 +176,8 @@
   const range = () => $('#qRange').value;
   const poolOf = () => A.songs.map((s, i) => i).filter((i) => inLvl(i) && (range() === 'all' || ['single', 'digital'].includes(A.songs[i].type)));
 
-  function newQuiz() {
+  // same = 'same' : 모드 · 범위만 바꾼 것 (아직 안 푼 문제면 번호를 올리지 않는다)
+  function newQuiz(same) {
     const keep = Q && Q.artist === A.id ? Q : null;
     const pool = poolOf();
     let used = keep ? keep.used : new Set();
@@ -185,7 +186,7 @@
     const song = fresh[Math.floor(Math.random() * fresh.length)];
     used.add(song);
     Q = {
-      artist: A.id, no: keep ? keep.no + 1 : 1, song, shown: 1, wrong: [], state: 'play', used,
+      artist: A.id, no: keep ? keep.no + (same === 'same' && keep.state === 'play' ? 0 : 1) : 1, song, shown: 1, wrong: [], state: 'play', used,
       score: keep ? keep.score : 0, total: keep ? keep.total : 0,
     };
     $('#answerInput').value = '';
@@ -408,13 +409,13 @@
     if (kind === 'rev') return RV.files.map((_, k) => k);
     return lsPool();
   }
-  function newListen() {
+  function newListen(same) {
     lsStop();
     const kind = lsKind();
     const keep = L && L.artist === A.id ? L : null;
     const pool = lsPoolOf(kind);
     let used = keep && keep.kind === kind ? keep.used : new Set();
-    L = { artist: A.id, kind, no: keep ? keep.no + 1 : 1, song: -1, songs: [], found: new Set(), item: null, secs: LS_STEP, state: 'play', wrong: [], used, score: keep ? keep.score : 0, total: keep ? keep.total : 0, played: false };
+    L = { artist: A.id, kind, no: keep ? keep.no + (same === 'same' && (keep.state === 'play' || keep.empty) ? 0 : 1) : 1, song: -1, songs: [], found: new Set(), item: null, secs: LS_STEP, state: 'play', wrong: [], used, score: keep ? keep.score : 0, total: keep ? keep.total : 0, played: false };
     $('#lsInput').value = '';
     $('#lsMsg').textContent = '';
     if (!pool.length) { L.empty = true; renderListen(); return; }
@@ -859,7 +860,7 @@
   $('#nextBtn').addEventListener('click', newQuiz);
   $('#nextBtn2').addEventListener('click', newQuiz);
   $('#answerInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); check(); } });
-  $('#qRange').addEventListener('change', () => { store.set('sq_range', range()); if (Q) Q.used = new Set(); newQuiz(); });
+  $('#qRange').addEventListener('change', () => { store.set('sq_range', range()); if (Q) Q.used = new Set(); newQuiz('same'); });
   $('#qBig').addEventListener('click', () => {
     document.body.classList.toggle('big');
     $('#qBig').classList.toggle('on', document.body.classList.contains('big'));
@@ -891,14 +892,14 @@
   $('#lsNext').addEventListener('click', newListen);
   $('#lsNext2').addEventListener('click', newListen);
   $('#lsInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); lsCheck(); } });
-  $$('#lsKind [data-kind]').forEach((b) => b.addEventListener('click', () => { store.set('sq_lskind', b.dataset.kind); if (L) L.used = new Set(); newListen(); }));
+  $$('#lsKind [data-kind]').forEach((b) => b.addEventListener('click', () => { store.set('sq_lskind', b.dataset.kind); if (L) L.used = new Set(); newListen('same'); }));
   $('#lsRate').addEventListener('change', () => store.set('sq_lsrate', $('#lsRate').value));
-  $('#lsMix').addEventListener('change', () => { store.set('sq_lsmix', $('#lsMix').value); if (L && L.kind === 'mix') newListen(); });
+  $('#lsMix').addEventListener('change', () => { store.set('sq_lsmix', $('#lsMix').value); if (L && L.kind === 'mix') newListen('same'); });
   $('#rvFiles').addEventListener('change', (e) => {
     RV.files = [...e.target.files]; RV.buf.clear();
-    if (L && L.kind === 'rev') { L.used = new Set(); newListen(); }
+    if (L && L.kind === 'rev') { L.used = new Set(); newListen('same'); }
   });
-  $('#lyText').addEventListener('input', () => { store.set(lyKey(), $('#lyText').value); if (L && L.kind === 'lyric' && (L.empty || L.state !== 'play')) newListen(); else if (L) renderListen(); });
+  $('#lyText').addEventListener('input', () => { store.set(lyKey(), $('#lyText').value); if (L && L.kind === 'lyric' && (L.empty || L.state !== 'play')) newListen('same'); else if (L) renderListen(); });
   $('#lyVoice').addEventListener('change', () => store.set('sq_lyvoice', $('#lyVoice').value));
   $('#lyRate').addEventListener('change', () => store.set('sq_lyrate', $('#lyRate').value));
   // 난이도 : 일반 / 하드
@@ -907,7 +908,7 @@
     syncLvl();
     if (Q) Q.used = new Set();
     if (L) L.used = new Set();
-    if (mode === 'quiz') newQuiz(); else if (mode === 'listen') newListen(); else if (mode === 'updown') startUd();
+    if (mode === 'quiz') newQuiz('same'); else if (mode === 'listen') newListen('same'); else if (mode === 'updown') startUd();
   }));
   $('#lsBig').addEventListener('click', () => $('#qBig').click());
   // 광고가 나오면 가리개를 잠깐 걷어서 건너뛰기를 누를 수 있게 한다 (6초 뒤 다시 가림)
