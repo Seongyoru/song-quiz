@@ -74,7 +74,7 @@ const ROOM = (() => {
       const prev = S.players[m.id];
       S.players[m.id] = { name, score: prev ? prev.score : 0, marbles: prev && prev.marbles != null ? prev.marbles : MARBLES };
       pub();
-      if (isNew) toastBig(`👋 ${name}`, 1200);
+      if (isNew) toastBig(name, 1400, 'join', T('입장했어요'));
     } else if (m.t === 'leave' && m.id && S.players[m.id]) {
       // 나가기 = 목록에서 뺌, 연결 끊김(창 닫음 · 인터넷) = 회색으로 남겨 두고 다시 들어오면 그대로
       if (m.soft) S.players[m.id].off = true; else delete S.players[m.id];
@@ -85,7 +85,7 @@ const ROOM = (() => {
       S.locked = { id: m.id, name: S.players[m.id].name };
       pub();
       sfx('pick', 0.8);
-      toastBig(`🔔 ${S.players[m.id].name}`, 0);
+      toastBig(S.players[m.id].name, 0, 'buzz', T('버저! 정답을 입력해 주세요'));
       if (window.SQ) { window.SQ.stop(); window.SQ.focus(); }
     }
   }
@@ -126,7 +126,7 @@ const ROOM = (() => {
     S.drawing = true; S.open = false; S.locked = null; hideBig(); pub();
     closeDlg();
     if (window.SQ) window.SQ.stop();
-    LUCKY.run(people, (w) => { S.drawing = false; S.draw = { id: w.id, name: w.name, n: (S.draw ? S.draw.n : 0) + 1 }; pub(); })
+    LUCKY.run(people, (w) => { S.drawing = false; S.draw = { id: w.id, name: w.name, n: (S.draw ? S.draw.n : 0) + 1 }; pub(); }, { again: lucky })
       .catch(() => { S.drawing = false; pub(); alert(T('럭키드로우를 불러오지 못했어요. 인터넷 연결을 확인해 주세요')); });
   }
   function newRound() { if (role !== 'host') return; S.round += 1; S.open = true; S.locked = null; S.blocked = []; S.cool = {}; hideBig(); pub(); }
@@ -165,6 +165,9 @@ const ROOM = (() => {
     if (role !== 'player' || !P || !P.open || P.locked || Date.now() < coolUntil || Date.now() - pressedAt < 1500) return;
     pressedRound = P.round; pressedAt = Date.now();
     client.publish(topic(code, 'in'), JSON.stringify({ t: 'buzz', id: myId, round: P.round }), { qos: 1 });
+    // 신호가 빠졌을 때를 대비해 0.7초 안에 아무도 안 잡혔으면 한 번 더 보낸다 (출제자는 먼저 온 한 명만 받는다)
+    const mine = pressedAt, rnd0 = P.round;
+    setTimeout(() => { if (client && pressedAt === mine && P && P.open && !P.locked && P.round === rnd0) client.publish(topic(code, 'in'), JSON.stringify({ t: 'buzz', id: myId, round: rnd0 }), { qos: 1 }); }, 700);
     try { navigator.vibrate && navigator.vibrate(40); } catch (e) { /* 무시 */ }
     render();
   }
@@ -182,8 +185,14 @@ const ROOM = (() => {
 
   /* ---------- 화면 ---------- */
   let bigT = 0;
-  function toastBig(text, ms) {
-    const el = $('#roomBig'); el.textContent = text; el.hidden = false;
+  // 알림 카드 : kind = buzz(버저, 판정할 때까지) · join(입장) · info
+  const BELL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.3 15.4c-.4.7.1 1.6.9 1.6h13.6c.8 0 1.3-.9.9-1.6L18 12.6V9a6 6 0 0 0-6-6z" fill="currentColor"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  const WAVE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c.8-4.2 4-6.5 8-6.5s7.2 2.3 8 6.5" fill="currentColor"/></svg>';
+  function toastBig(text, ms, kind = 'info', label = '') {
+    const el = $('#roomBig');
+    el.className = `room-big ${kind}`;
+    el.innerHTML = `<div class="rbg-card"><span class="rbg-ico">${kind === 'buzz' ? BELL : kind === 'join' ? WAVE : ''}</span><div class="rbg-txt">${label ? `<small>${esc(label)}</small>` : ''}<b>${esc(text)}</b></div></div>`;
+    el.hidden = false;
     clearTimeout(bigT); if (ms) bigT = setTimeout(() => { el.hidden = true; }, ms);
   }
   function hideBig() { clearTimeout(bigT); $('#roomBig').hidden = true; }

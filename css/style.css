@@ -730,3 +730,31 @@ body.big .room-btn { font-size: 17px; padding: 10px 18px 10px 14px; }
 /* 비밀번호 칸 : 한글 입력이 되도록 일반 칸 + 글자 가리기 */
 .pw { -webkit-text-security: disc; text-security: disc; }
 .pw:placeholder-shown { -webkit-text-security: none; }
+
+/* 버저 · 입장 알림 카드 : 화면을 덮지 않고 위쪽 가운데에 */
+.room-big { position: fixed; left: 0; right: 0; top: 76px; bottom: auto; inset-inline: 0; z-index: 55; display: flex; justify-content: center; padding: 0 16px; background: none; pointer-events: none; animation: none; font: inherit; color: inherit; text-shadow: none; }
+.room-big[hidden] { display: none; }
+.rbg-card { display: flex; align-items: center; gap: 16px; min-width: min(420px, 100%); max-width: 640px; padding: 14px 26px 14px 16px; border-radius: 22px; background: #fff; box-shadow: 0 18px 50px rgba(20, 20, 40, .22), 0 0 0 1px rgba(0, 0, 0, .04); animation: rbgIn .45s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes rbgIn { from { transform: translateY(-24px) scale(.92); opacity: 0; } }
+.rbg-ico { flex: none; width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--ac, #3fae3a), var(--ac2, #a6e23c)); box-shadow: 0 8px 18px color-mix(in srgb, var(--ac, #3fae3a) 40%, transparent); }
+.rbg-ico svg { width: 34px; height: 34px; }
+.room-big.buzz .rbg-ico svg { transform-origin: 50% 15%; animation: ring 1.1s ease-in-out infinite; }
+@keyframes ring { 0%, 50%, 100% { transform: rotate(0); } 10% { transform: rotate(18deg); } 20% { transform: rotate(-15deg); } 30% { transform: rotate(10deg); } 40% { transform: rotate(-6deg); } }
+.rbg-txt { display: flex; flex-direction: column; min-width: 0; }
+.rbg-txt small { font-size: 13px; font-weight: 800; color: var(--ac, #3fae3a); letter-spacing: .3px; }
+.rbg-txt b { font: 700 clamp(30px, 5vw, 46px)/1.15 var(--fd); color: var(--ink); word-break: break-all; }
+.room-big.buzz .rbg-card { border: 3px solid var(--ac, #3fae3a); }
+.room-big.join .rbg-card { padding: 10px 22px 10px 12px; min-width: 0; }
+.room-big.join .rbg-ico { width: 42px; height: 42px; border-radius: 14px; }
+.room-big.join .rbg-ico svg { width: 24px; height: 24px; }
+.room-big.join .rbg-txt b { font-size: 24px; }
+.room-big.info .rbg-ico { display: none; }
+.room-big.info .rbg-txt b { font-size: 20px; }
+body.big .room-big { top: 90px; }
+body.big .rbg-txt b { font-size: clamp(36px, 5vw, 56px); }
+
+.lucky .lk-btns { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); display: flex; gap: 10px; }
+.lucky .lk-btns[hidden] { display: none; }
+.lucky .lk-btns .btn { position: static; transform: none; width: auto; margin: 0; padding: 14px 30px; font-size: 17px; }
+
+.rb-status.hot { color: var(--ink); font-size: 15px; padding: 4px 12px; border-radius: 99px; background: color-mix(in srgb, var(--ac, #3fae3a) 16%, #fff); border: 1.5px solid var(--ac, #3fae3a); }

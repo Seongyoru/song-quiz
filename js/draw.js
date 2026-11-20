@@ -56,7 +56,8 @@ const LUCKY = (() => {
     };
   }
 
-  async function run(people, done) {
+  // opts.again : 「다시 하기」를 눌렀을 때 부를 함수 (없으면 같은 참가자로 다시 돌린다)
+  async function run(people, done, opts = {}) {
     await lib();
     const { Engine, Bodies, Body, Composite, Events } = window.Matter;
     const list = people.filter((p) => p.count > 0);
@@ -78,7 +79,7 @@ const LUCKY = (() => {
       <div class="lk-count"></div>
       <div class="lk-final" hidden>FINAL</div>
       <div class="lk-win" hidden></div>
-      <button type="button" class="btn lk-close" hidden>${esc(T('닫기'))}</button>`;
+      <div class="lk-btns" hidden><button type="button" class="btn main lk-again">${esc(T('🔁 다시 하기'))}</button><button type="button" class="btn lk-close">${esc(T('닫기'))}</button></div>`;
     document.body.appendChild(ov);
     const cv = ov.querySelector('.lk-cv'), g = cv.getContext('2d');
     const mini = ov.querySelector('.lk-mini'), mg = mini.getContext('2d');
@@ -657,16 +658,16 @@ const LUCKY = (() => {
       const el = ov.querySelector('.lk-win');
       el.innerHTML = `<small>🏆 ${esc(T('당첨'))}</small><b style="color:${colors[p.id]}">${esc(p.name)}</b>`;
       el.hidden = false;
-      ov.querySelector('.lk-close').hidden = false;
+      ov.querySelector('.lk-btns').hidden = false;
       drawRank();
       try { if (typeof FX !== 'undefined') { FX.fireworks(3); setTimeout(() => FX.confetti(3), 500); } } catch (e) { /* 무시 */ }
       SND.win();
       try { const a = new Audio('sounds/champion.ogg'); a.volume = 0.7; a.play().catch(() => {}); } catch (e) { /* 무시 */ }
       done(p);
     }
-    ov.querySelector('.lk-close').addEventListener('click', () => {
-      cancelAnimationFrame(raf); window.removeEventListener('resize', resize); Engine.clear(engine); SND.close(); ov.remove();
-    });
+    const shut = () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); Engine.clear(engine); SND.close(); ov.remove(); };
+    ov.querySelector('.lk-close').addEventListener('click', shut);
+    ov.querySelector('.lk-again').addEventListener('click', () => { shut(); if (opts.again) opts.again(); else run(people, done, opts); });
     raf = requestAnimationFrame(frame);
   }
   return { run };
