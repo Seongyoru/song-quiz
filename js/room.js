@@ -26,7 +26,9 @@ const ROOM = (() => {
 
   let client = null, role = null, code = '', S = null, connected = false;
   // 출제자 상태
-  const blank = () => ({ open: false, locked: null, blocked: [], round: 0, players: {} });
+  const blank = () => ({ open: false, locked: null, blocked: [], cool: {}, round: 0, players: {} });
+  // 틀리면 5초 동안 버저를 못 누른다 (그 뒤엔 같은 문제에 다시 도전 가능)
+  const COOL_MS = 5000;
   // 럭키드로우 구슬 : 들어오면 3개, 정답을 맞히면 출제자가 1개씩 더 준다
   const MARBLES = 3;
   const mOf = (p) => (p.marbles != null ? p.marbles : MARBLES);
@@ -56,10 +58,11 @@ const ROOM = (() => {
 
   /* ---------- 출제자 ---------- */
   const newCode = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
+  const coolLeft = () => { const o = {}; Object.entries(S.cool || {}).forEach(([id, t]) => { const ms = t - Date.now(); if (ms > 0) o[id] = ms; }); return o; };
   function pub() {
     if (!client || role !== 'host') return;
     const players = Object.entries(S.players).map(([id, p]) => ({ id, name: p.name, score: p.score, marbles: mOf(p) }));
-    client.publish(topic(code, 'host'), JSON.stringify({ t: 'state', open: S.open, locked: S.locked, blocked: S.blocked, round: S.round, players, drawing: !!S.drawing, draw: S.draw || null }), { qos: 1, retain: true });
+    client.publish(topic(code, 'host'), JSON.stringify({ t: 'state', open: S.open, locked: S.locked, blocked: [], cool: coolLeft(), round: S.round, players, drawing: !!S.drawing, draw: S.draw || null }), { qos: 1, retain: true });
     store.set('sq_room_host', { code, S });
     render();
   }
@@ -78,12 +81,12 @@ const ROOM = (() => {
       if (S.locked && S.locked.id === m.id) { S.locked = null; hideBig(); }
       pub();
     } else if (m.t === 'buzz' && m.id && S.players[m.id]) {
-      if (!S.open || S.locked || S.blocked.includes(m.id) || m.round !== S.round) return;
+      if (!S.open || S.locked || m.round !== S.round || ((S.cool || {})[m.id] || 0) > Date.now()) return;
       S.locked = { id: m.id, name: S.players[m.id].name };
       pub();
       sfx('pick', 0.8);
       toastBig(`🔔 ${S.players[m.id].name}`, 0);
-      if (window.SQ) window.SQ.stop();
+      if (window.SQ) { window.SQ.stop(); window.SQ.focus(); }
     }
   }
   async function host(resume) {
@@ -98,7 +101,7 @@ const ROOM = (() => {
     pub();
     openDlg();
   }
-  function judge(ok) {
+  function judge(ok, fromApp) {
     if (role !== 'host' || !S.locked) return;
     const p = S.players[S.locked.id];
     if (ok) {
@@ -106,9 +109,9 @@ const ROOM = (() => {
       S.locked = null; S.open = false;
       hideBig();
       pub();
-      if (window.SQ) window.SQ.right();
+      if (!fromApp && window.SQ) window.SQ.right();
     } else {
-      S.blocked.push(S.locked.id);
+      S.cool = S.cool || {}; S.cool[S.locked.id] = Date.now() + COOL_MS;
       S.locked = null;
       sfx('wrong', 0.6);
       hideBig();
@@ -126,13 +129,15 @@ const ROOM = (() => {
     LUCKY.run(people, (w) => { S.drawing = false; S.draw = { id: w.id, name: w.name, n: (S.draw ? S.draw.n : 0) + 1 }; pub(); })
       .catch(() => { S.drawing = false; pub(); alert(T('럭키드로우를 불러오지 못했어요. 인터넷 연결을 확인해 주세요')); });
   }
-  function newRound() { if (role !== 'host') return; S.round += 1; S.open = true; S.locked = null; S.blocked = []; hideBig(); pub(); }
+  function newRound() { if (role !== 'host') return; S.round += 1; S.open = true; S.locked = null; S.blocked = []; S.cool = {}; hideBig(); pub(); }
+  // 퀴즈 화면에서 답을 확인했을 때 : 버저를 누른 사람이 있으면 그 사람의 정답 · 오답으로 처리
+  function answer(ok) { if (role !== 'host' || !S || !S.locked) return false; judge(ok, true); return true; }
   function closeRound() { if (role !== 'host' || (!S.open && !S.locked)) return; S.open = false; S.locked = null; hideBig(); pub(); }
 
   /* ---------- 참가자 ---------- */
   let P = null; // 받은 방 상태
   let myName = store.get('sq_pname', '');
-  let pressedRound = -1;
+  let pressedRound = -1, pressedAt = 0, coolUntil = 0, coolT = 0, joinAt = 0;
   function sendJoin() { if (client && role === 'player') client.publish(topic(code, 'in'), JSON.stringify({ t: 'join', id: myId, name: myName }), { qos: 1 }); }
   async function join(c, name) {
     leave(true);
@@ -143,6 +148,10 @@ const ROOM = (() => {
         if (tp === topic(code, 'host')) {
           const was = P;
           P = m && m.t === 'state' ? m : null;
+          coolUntil = P && P.cool && P.cool[myId] ? Date.now() + P.cool[myId] : 0;
+          if (P && P.locked) pressedAt = 0;
+          // 내 입장 신호가 빠졌으면 (목록에 내가 없으면) 다시 보낸다
+          if (P && !P.players.some((x) => x.id === myId) && Date.now() - joinAt > 2000) { joinAt = Date.now(); sendJoin(); }
           if (P && P.draw && P.draw.id === myId && !P.drawing && !(was && was.draw && was.draw.n === P.draw.n)) { try { navigator.vibrate && navigator.vibrate([100, 60, 100, 60, 300]); } catch (e) { /* 무시 */ } sfx('champion', 0.6); }
           if (P && P.locked && P.locked.id === myId && !(was && was.locked && was.locked.id === myId)) { try { navigator.vibrate && navigator.vibrate([80, 40, 160]); } catch (e) { /* 무시 */ } sfx('correct', 0.5); }
           render();
@@ -153,8 +162,8 @@ const ROOM = (() => {
     render();
   }
   function buzz() {
-    if (role !== 'player' || !P || !P.open || P.locked || P.blocked.includes(myId) || pressedRound === P.round) return;
-    pressedRound = P.round;
+    if (role !== 'player' || !P || !P.open || P.locked || Date.now() < coolUntil || Date.now() - pressedAt < 1500) return;
+    pressedRound = P.round; pressedAt = Date.now();
     client.publish(topic(code, 'in'), JSON.stringify({ t: 'buzz', id: myId, round: P.round }), { qos: 1 });
     try { navigator.vibrate && navigator.vibrate(40); } catch (e) { /* 무시 */ }
     render();
@@ -196,6 +205,7 @@ const ROOM = (() => {
     const dlg = $('#roomDlgBody'), bar = $('#roomBar'), play = $('#roomPlay');
     if (!dlg) return;
     $('#roomBtn').classList.toggle('on', !!role);
+    $('#roomBtnTxt').textContent = role ? `LIVE · ${T('방')} ${code}` : T('방 만들기');
     // 출제자 막대
     bar.hidden = role !== 'host';
     if (role === 'host' && S) {
@@ -208,14 +218,19 @@ const ROOM = (() => {
     }
     // 참가자 버저 화면
     play.hidden = role !== 'player';
+    // 참가자 화면일 때는 뒤쪽 페이지를 숨기고 스크롤을 막는다 (휴대폰에서 뒤가 비치지 않게)
+    document.body.classList.toggle('playing', role === 'player');
     if (role === 'player') {
       const me = P && P.players.find((x) => x.id === myId);
       let cls = 'wait', msg = T('출제자를 기다리는 중...');
       if (!connected) msg = T('연결 중...');
       else if (P && P.locked && P.locked.id === myId) { cls = 'mine'; msg = T('내 차례! 정답을 말해 주세요'); }
       else if (P && P.locked) { cls = 'other'; msg = T('{name} 님이 먼저 눌렀어요', { name: P.locked.name }); }
-      else if (P && P.blocked.includes(myId)) { cls = 'used'; msg = T('이번 문제는 기회를 썼어요'); }
-      else if (P && P.open && pressedRound === P.round) { cls = 'sent'; msg = T('눌렀어요!'); }
+      else if (P && P.open && Date.now() < coolUntil) {
+        cls = 'used'; msg = T('⏳ {n}초 뒤에 다시 누를 수 있어요', { n: Math.ceil((coolUntil - Date.now()) / 1000) });
+        clearTimeout(coolT); coolT = setTimeout(render, 250);
+      }
+      else if (P && P.open && Date.now() - pressedAt < 1500) { cls = 'sent'; msg = T('눌렀어요!'); clearTimeout(coolT); coolT = setTimeout(render, 1600); }
       else if (P && P.open) { cls = 'ready'; msg = T('들리면 누르세요!'); }
       else if (P) msg = T('다음 문제를 기다리는 중...');
       $('#rpName').textContent = `${myName} · ${T('방')} ${code}`;
@@ -315,7 +330,7 @@ const ROOM = (() => {
     // 새로 고침해도 출제자 방은 그대로 (같은 코드 · 점수)
     if (!/^#\/join\//.test(location.hash) && store.get('sq_room_host', null)) host(true).then(closeDlg);
   }
-  return { init, newRound, closeRound, get role() { return role; } };
+  return { init, newRound, closeRound, answer, get role() { return role; } };
 })();
 window.ROOM = ROOM;
 ROOM.init();

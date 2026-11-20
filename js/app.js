@@ -266,7 +266,8 @@
     if (Q.state !== 'play') return;
     const v = $('#answerInput').value.trim();
     if (!v) { $('#answerInput').focus(); return; }
-    if (answers(A.songs[Q.song]).includes(norm(v))) { finish('right'); return; }
+    if (answers(A.songs[Q.song]).includes(norm(v))) { if (window.ROOM) window.ROOM.answer(true); finish('right'); return; }
+    if (window.ROOM) window.ROOM.answer(false);
     if (!Q.wrong.includes(v)) Q.wrong.push(v);
     sfx('wrong', 0.5);
     $('#answerInput').value = '';
@@ -707,7 +708,7 @@
       if (hit != null) {
         L.found.add(hit);
         $('#lsInput').value = '';
-        if (L.found.size === L.songs.length) { lsFinish('right'); return; }
+        if (L.found.size === L.songs.length) { if (window.ROOM) window.ROOM.answer(true); lsFinish('right'); return; }
         sfx('up-right', 0.5);
         renderListen();
         $('#lsInput').focus();
@@ -715,8 +716,9 @@
       }
     } else {
       const ok = L.song >= 0 ? answers(A.songs[L.song]) : [norm(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))];
-      if (ok.includes(n)) { lsFinish('right'); return; }
+      if (ok.includes(n)) { if (window.ROOM) window.ROOM.answer(true); lsFinish('right'); return; }
     }
+    if (window.ROOM) window.ROOM.answer(false);
     if (!L.wrong.includes(v)) L.wrong.push(v);
     sfx('wrong', 0.5);
     $('#lsInput').value = '';
@@ -1124,6 +1126,8 @@
   // 방 · 버저(room.js)에서 부르는 것 : 누가 버저를 누르면 소리를 멈추고, 정답이면 이 문제를 맞힌 걸로
   window.SQ = {
     stop() { lsStop(); },
+    // 누가 버저를 누르면 답 칸으로 바로 (출제자가 들은 답을 입력)
+    focus() { const el = mode === 'listen' ? $('#lsInput') : mode === 'quiz' ? $('#answerInput') : null; if (el && !el.closest('[hidden]')) el.focus(); },
     right() {
       if (mode === 'listen' && L && L.state === 'play' && !L.empty) lsFinish('right');
       else if (mode === 'quiz' && Q && Q.state === 'play') finish('right');

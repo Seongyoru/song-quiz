@@ -124,6 +124,7 @@ const I18N = (() => {
     '내 차례! 정답을 말해 주세요': ['あなたの番！答えをどうぞ', 'Your turn! Say the answer'],
     '{name} 님이 먼저 눌렀어요': ['{name}さんが先に押しました', '{name} buzzed first'],
     '이번 문제는 기회를 썼어요': ['この問題はもう回答済みです', 'You used your chance on this one'],
+    '⏳ {n}초 뒤에 다시 누를 수 있어요': ['⏳ あと{n}秒で押せます', '⏳ You can buzz again in {n}s'],
     '다음 문제를 기다리는 중...': ['次の問題を待っています...', 'Waiting for the next question...'],
     '출제자를 기다리는 중...': ['出題者を待っています...', 'Waiting for the host...'],
     '눌렀어요!': ['押しました！', 'Buzzed!'],

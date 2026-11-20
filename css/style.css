@@ -703,3 +703,26 @@ body.big .seg button { font-size: 21px; padding: 12px 20px; }
 body.big .reset-btn { font-size: 19px; padding: 12px 24px 12px 16px; }
 body.big .reset-btn svg { width: 26px; height: 26px; }
 @media (max-width: 640px) { .reset-btn:hover { transform: translateY(-2px); } }
+
+/* 참가자 버저 화면 : 뒤 페이지를 완전히 가린다 */
+body.playing { overflow: hidden; height: 100dvh; }
+body.playing > header, body.playing > main, body.playing > footer, body.playing .foot { display: none !important; }
+.room-play { min-height: 100dvh; overscroll-behavior: contain; }
+
+/* 버저 알림은 화면을 막지 않는다 (출제자가 바로 답을 입력할 수 있게) */
+.room-big { pointer-events: none; background: rgba(255, 255, 255, .35); align-items: start; padding-top: 18vh; }
+
+/* 방 만들기 버튼 : 잘 보이게 */
+.room-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px 8px 12px; border-radius: 99px; border: 2px solid var(--ac, #3fae3a); background: #fff; color: var(--ac, #3fae3a); font: 800 15px var(--fk); white-space: nowrap; cursor: pointer; box-shadow: 0 4px 14px color-mix(in srgb, var(--ac, #3fae3a) 22%, transparent); transition: transform .15s, background .15s, color .15s; }
+.room-btn svg { width: 20px; height: 20px; }
+.room-btn:hover { transform: translateY(-2px); background: var(--ac, #3fae3a); color: #fff; }
+.room-btn .live-dot { display: none; width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: livepulse 1.2s ease-in-out infinite; }
+.room-btn.on { background: #e0484f; border-color: #e0484f; color: #fff; box-shadow: 0 6px 18px rgba(224, 72, 79, .4); }
+.room-btn.on .live-dot { display: inline-block; }
+.room-btn.on svg { display: none; }
+@keyframes livepulse { 50% { opacity: .25; transform: scale(.7); } }
+body.big .room-btn { font-size: 17px; padding: 10px 18px 10px 14px; }
+@media (max-width: 640px) { .room-btn span { font-size: 13px; } .room-btn { padding: 6px 12px 6px 10px; } }
+/* 처음부터 버튼은 로고와 오른쪽 버튼들 사이 가운데에 (겹치지 않게 흐름 안에) */
+.reset-btn { position: static; transform: none; margin: 0 auto; }
+.reset-btn:hover { transform: translateY(-2px); }

@@ -14,6 +14,47 @@ const LUCKY = (() => {
   const colorOf = (k, n) => `hsl(${Math.round((k * 360) / Math.max(n, 1) + 12) % 360} 85% 60%)`;
   const W = 900; // 코스 폭 (논리 좌표)
 
+  /* ---------- 효과음 : 소리 파일 없이 Web Audio 로 바로 만든다 (사이트 효과음 끄기를 따른다) ---------- */
+  function makeSynth() {
+    let on = true;
+    try { const v = localStorage.getItem('sq_sfx'); on = v == null ? true : JSON.parse(v); } catch (e) { /* 기본은 켬 */ }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!on || !AC) return new Proxy({}, { get: () => () => {} });
+    const ac = new AC();
+    const master = ac.createGain(); master.gain.value = 0.55; master.connect(ac.destination);
+    const last = {};
+    const ok = (k, ms) => { const t = performance.now(); if (last[k] && t - last[k] < ms) return false; last[k] = t; return true; };
+    const tone = (f0, f1, dur, type = 'sine', vol = 0.3, delay = 0) => {
+      const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.05);
+    };
+    let nb = null;
+    const noise = (dur, f0, f1, q = 1, vol = 0.3, type = 'bandpass') => {
+      if (!nb) { nb = ac.createBuffer(1, ac.sampleRate * 1.5, ac.sampleRate); const d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+      const t = ac.currentTime, src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = nb; f.type = type; f.Q.value = q;
+      f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f).connect(g).connect(master); src.start(t); src.stop(t + dur + 0.05);
+    };
+    return {
+      count: () => { tone(660, 660, 0.2, 'square', 0.16); tone(1320, 1320, 0.12, 'sine', 0.08); },
+      go: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.4, 'triangle', 0.2, i * 0.05)); noise(0.45, 800, 5000, 0.8, 0.14); },
+      bump: () => ok('bump', 70) && tone(520, 980, 0.13, 'sine', 0.22),
+      whoosh: () => ok('whoosh', 120) && noise(0.28, 500, 3800, 1.2, 0.2),
+      warp: () => { tone(300, 1600, 0.5, 'sawtooth', 0.1); tone(600, 2400, 0.5, 'sine', 0.14, 0.05); [1800, 2400, 3000].forEach((f, i) => tone(f, f, 0.08, 'sine', 0.06, 0.35 + i * 0.06)); },
+      back: () => { tone(900, 140, 0.6, 'sawtooth', 0.12); tone(450, 70, 0.6, 'sine', 0.18); },
+      rumble: () => ok('rumble', 800) && (tone(70, 38, 1.0, 'sine', 0.32), noise(1.0, 320, 70, 0.7, 0.22, 'lowpass')),
+      boom: () => ok('boom', 150) && (tone(150, 42, 0.45, 'sine', 0.42), noise(0.35, 2200, 180, 0.6, 0.28, 'lowpass')),
+      lead: () => ok('lead', 450) && tone(1200, 1550, 0.07, 'triangle', 0.09),
+      final: () => { tone(55, 55, 1.0, 'sine', 0.34); tone(110, 108, 0.6, 'square', 0.1); noise(0.7, 4500, 260, 0.7, 0.18); },
+      win: () => { [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.55, 'triangle', 0.18, i * 0.12)); tone(1568, 1568, 1.1, 'sine', 0.1, 0.5); },
+      close: () => { try { ac.close(); } catch (e) { /* 무시 */ } },
+    };
+  }
+
   async function run(people, done) {
     await lib();
     const { Engine, Bodies, Body, Composite, Events } = window.Matter;
@@ -21,6 +62,7 @@ const LUCKY = (() => {
     const total = list.reduce((a, p) => a + p.count, 0);
     if (!total) return;
     const colors = {};
+    const SND = makeSynth();
     list.forEach((p, k) => { colors[p.id] = colorOf(k, list.length); });
 
     /* ---------- 화면 ---------- */
@@ -50,7 +92,7 @@ const LUCKY = (() => {
     window.addEventListener('resize', resize);
 
     /* ---------- 코스 만들기 ---------- */
-    const engine = Engine.create({ gravity: { y: 1.35 }, positionIterations: 8, velocityIterations: 6 });
+    const engine = Engine.create({ gravity: { y: 1.65 }, positionIterations: 8, velocityIterations: 6 });
     const world = engine.world;
     const solid = []; // 그릴 고정 물체 { b, kind }
     const add = (b, kind) => { b.kind = kind; solid.push(b); Composite.add(world, b); return b; };
@@ -70,7 +112,7 @@ const LUCKY = (() => {
     // 블랙홀 : 반지름 R 안의 구슬을 빙글빙글 끌어당긴다 (오래 붙잡힌 구슬은 잠깐 놓아 준다)
     const wells = [];
     const well = (x, wy, R) => wells.push({ x, y: wy, R, ph: Math.random() * 4.5 });
-    // 4.5초마다 0.9초 동안 강하게 빨아들인다 (SURGE) : 범위 1.8배 · 힘 3.5배
+    // 4.5초마다 0.9초 동안 강하게 빨아들인다 (SURGE) : 범위 1.8배 · 힘 2.6배
     const surgeOf = (w, ms) => { const c = (ms / 1000 + w.ph) % 4.5; return c < 0.9 ? Math.sin((c / 0.9) * Math.PI) : 0; };
     const pops = []; // 떠오르는 글자 { x, y, text, color, at }
     const waves = []; // 충격파 { x, y, at }
@@ -131,13 +173,12 @@ const LUCKY = (() => {
     // 4. 풍차 (두 날개 · 세 날개)
     zone('WINDMILLS', 45, () => {
       mill(W * 0.22, y + 100, 210, 0.0021); mill(W * 0.78, y + 100, 210, -0.0024); mill(W * 0.5, y + 320, 230, 0.0019, 3);
-      well(W * 0.5, y + 110, 150);
+      well(W * 0.5, y + 110, 125);
       for (let x = 40; x < W; x += 90) peg(x, y + 210, 7);
       y += 470;
     });
     // 5. 세 갈래 길 : 칸막이로 나뉘고, 칸마다 다른 장애물 (핀 · 범퍼 · 풍차)
     zone('SPLIT LANES', 160, () => {
-      backY = y + 20;
       plank(W * 0.18, y + 40, W * 0.4, 0.38, 'ramp'); plank(W * 0.82, y + 40, W * 0.4, -0.38, 'ramp');
       y += 120;
       const top = y, len = 380;
@@ -165,6 +206,7 @@ const LUCKY = (() => {
     });
     // 7. 범퍼 파티 : 촘촘한 핀 + 큰 범퍼 + 돌아가는 막대
     zone('BUMPER PARTY', 300, () => {
+      backY = y + 10; // BACK 게이트는 이 구간 처음으로 되돌린다
       for (let row = 0; row < 8; row++, y += 58) {
         for (let x = row % 2 ? 62 : 22; x < W - 15; x += 80) peg(x + rnd(-4, 4), y, 5.5);
       }
@@ -174,7 +216,7 @@ const LUCKY = (() => {
       });
       [[W * 0.15, y - 420], [W * 0.85, y - 420], [W * 0.5, y - 100]].forEach(([bx, by]) => bumper(bx, by, 22));
       hole(W * 0.12, y - 200, 18, 'warp'); hole(W * 0.88, y - 260, 18, 'warp');
-      well(W * 0.5, y - 270, 160);
+      well(W * 0.5, y - 270, 120);
       hole(W * 0.74, y - 120, 16, 'back');
       y += 40;
     });
@@ -198,7 +240,7 @@ const LUCKY = (() => {
     Events.on(engine, 'collisionStart', (ev) => ev.pairs.forEach(({ bodyA, bodyB }) => {
       const pad = bodyA.kind === 'boost' ? bodyA : bodyB.kind === 'boost' ? bodyB : null;
       const ball = pad === bodyA ? bodyB : bodyA;
-      if (pad && ball.owner) { Body.setVelocity(ball, { x: pad.dir.x, y: pad.dir.y }); flash.set(pad, performance.now()); }
+      if (pad && ball.owner) { Body.setVelocity(ball, { x: pad.dir.x, y: pad.dir.y }); flash.set(pad, performance.now()); SND.whoosh(); }
       // 셔터에 부딪히면 충격파 : 반경 130 안 구슬을 바깥으로 튕겨 낸다 (셔터마다 0.35초에 한 번)
       const sh = bodyA.kind === 'shutter' ? bodyA : bodyB.kind === 'shutter' ? bodyB : null;
       const sb = sh === bodyA ? bodyB : bodyA;
@@ -208,6 +250,7 @@ const LUCKY = (() => {
           sh.waveAt = now;
           const cx = sb.position.x, cy = sb.position.y;
           waves.push({ x: cx, y: cy, at: now });
+          SND.boom();
           balls.forEach((o) => {
             const dx = o.position.x - cx, dy = o.position.y - cy, d = Math.hypot(dx, dy);
             if (d > 130 || o.done) return;
@@ -222,6 +265,7 @@ const LUCKY = (() => {
         const now = performance.now();
         if (hb.holeAt && now - hb.holeAt < 1500) return;
         hb.holeAt = now; flash.set(h, now);
+        if (h.kind === 'warp') SND.warp(); else SND.back();
         pops.push({ x: h.position.x, y: h.position.y - 30, text: h.kind === 'warp' ? `⚡ ${hb.owner.name} WARP!` : `↩ ${hb.owner.name} BACK!`, color: h.kind === 'warp' ? '#5bc8ff' : '#ff5d5d', at: now });
         const ty = h.kind === 'warp' ? warpY : backY;
         setTimeout(() => { Body.setPosition(hb, { x: rnd(W * 0.3, W * 0.7), y: ty }); Body.setVelocity(hb, { x: rnd(-2, 2), y: 1 }); hb.trail.length = 0; pops.push({ x: hb.position.x, y: ty + 30, text: h.kind === 'warp' ? '⚡ 역전 찬스!' : '↩ 처음부터 다시…', color: h.kind === 'warp' ? '#5bc8ff' : '#ff5d5d', at: performance.now() }); }, 0);
@@ -262,6 +306,7 @@ const LUCKY = (() => {
         const dx = ball.position.x - bump.position.x, dy = ball.position.y - bump.position.y, d = Math.hypot(dx, dy) || 1;
         Body.setVelocity(ball, { x: (dx / d) * 9, y: (dy / d) * 9 });
         flash.set(bump, performance.now());
+        SND.bump();
       });
     });
 
@@ -269,6 +314,7 @@ const LUCKY = (() => {
     const countEl = ov.querySelector('.lk-count'), rankEl = ov.querySelector('.lk-rank'), finalEl = ov.querySelector('.lk-final');
     const startAt = performance.now();
     let arrived = 0; // GOAL 통과 순서
+    let lastLeft = null, lastLead = null, wasNear = false;
     let released = false, winner = null, raf = 0, last = startAt, simT = 0, camY = 0, slow = 1, rankAt = 0;
     const STEP = 1000 / 120;
     let acc = 0;
@@ -282,21 +328,27 @@ const LUCKY = (() => {
       // 3 · 2 · 1 카운트다운
       if (!released) {
         const left = 3 - Math.floor((now - startAt) / 850);
+        if (left !== lastLeft) { lastLeft = left; if (left > 0) SND.count(); else SND.go(); }
         countEl.textContent = left > 0 ? left : 'GO!';
         countEl.classList.toggle('go', left <= 0);
         if (left <= 0) { released = true; Composite.remove(world, gate); setTimeout(() => { countEl.textContent = ''; }, 600); }
       }
       const lead = leader();
+      if (released && !winner && lead && lead !== lastLead) { if (lastLead) SND.lead(); lastLead = lead; }
       // 결승 직전 슬로모션
-      const near = released && !winner && lead && lead.position.y > GOAL - 420;
-      slow += ((near ? 0.35 : 1) - slow) * 0.08;
+      const near = released && !winner && lead && lead.position.y > GOAL - 230;
+      slow += ((near ? 0.55 : 1) - slow) * 0.08;
       finalEl.hidden = !near;
+      if (near && !wasNear) SND.final();
+      wasNear = near;
       acc += dt * slow;
       let n = 0;
       while (acc >= STEP && n < 6) {
         simT += STEP;
         movers.forEach((m) => m.fn(simT));
         solid.forEach((h) => { if (h.ph != null) h.open = Math.sin(simT * 0.0013 + h.ph) > -0.25; });
+        // 화면 근처 블랙홀이 SURGE 를 시작하면 웅웅
+        wells.forEach((w) => { const su = surgeOf(w, simT) > 0; if (su && !w.surging && released && Math.abs(w.y - (camY + 380)) < 700) SND.rumble(); w.surging = su; });
         if (released) balls.forEach((b) => {
           if (b.done || (b.freeUntil && simT < b.freeUntil)) return;
           let pulled = false;
@@ -305,11 +357,11 @@ const LUCKY = (() => {
             const dx = w.x - b.position.x, dy = w.y - b.position.y, d = Math.hypot(dx, dy);
             if (d > RR || d < 6) return;
             pulled = true;
-            const k = (1 - d / RR) * 0.0009 * (1 + su * 2.5) * b.mass;
+            const k = (1 - d / RR) * 0.00065 * (1 + su * 1.6) * b.mass;
             Body.applyForce(b, b.position, { x: (dx / d) * k - (dy / d) * k * 0.9, y: (dy / d) * k + (dx / d) * k * 0.9 });
           });
           b.wellT = pulled ? (b.wellT || 0) + STEP : 0;
-          if (b.wellT > 2600) { b.freeUntil = simT + 2500; b.wellT = 0; }
+          if (b.wellT > 1800) { b.freeUntil = simT + 3000; b.wellT = 0; }
         });
         Engine.update(engine, STEP);
         acc -= STEP; n++;
@@ -564,11 +616,12 @@ const LUCKY = (() => {
       ov.querySelector('.lk-close').hidden = false;
       drawRank();
       try { if (typeof FX !== 'undefined') { FX.fireworks(3); setTimeout(() => FX.confetti(3), 500); } } catch (e) { /* 무시 */ }
+      SND.win();
       try { const a = new Audio('sounds/champion.ogg'); a.volume = 0.7; a.play().catch(() => {}); } catch (e) { /* 무시 */ }
       done(p);
     }
     ov.querySelector('.lk-close').addEventListener('click', () => {
-      cancelAnimationFrame(raf); window.removeEventListener('resize', resize); Engine.clear(engine); ov.remove();
+      cancelAnimationFrame(raf); window.removeEventListener('resize', resize); Engine.clear(engine); SND.close(); ov.remove();
     });
     raf = requestAnimationFrame(frame);
   }
