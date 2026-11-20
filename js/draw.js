@@ -22,6 +22,7 @@ const LUCKY = (() => {
     if (!on || !AC) return new Proxy({}, { get: () => () => {} });
     const ac = new AC();
     const master = ac.createGain(); master.gain.value = 0.55; master.connect(ac.destination);
+    if (typeof window.LUCKY_TAP === 'function') { try { window.LUCKY_TAP(ac, master); } catch (e) { /* 녹화용 연결 실패는 무시 */ } }
     const last = {};
     const ok = (k, ms) => { const t = performance.now(); if (last[k] && t - last[k] < ms) return false; last[k] = t; return true; };
     const tone = (f0, f1, dur, type = 'sine', vol = 0.3, delay = 0) => {
@@ -88,6 +89,8 @@ const LUCKY = (() => {
       <div class="lk-count"></div>
       <div class="lk-final" hidden>FINAL</div>
       <div class="lk-win" hidden></div>
+      <div class="lk-prog" hidden></div>
+      <div class="lk-board" hidden><h3>🏆 ${esc(T('최종 순위'))}</h3><ol></ol></div>
       <div class="lk-btns" hidden><button type="button" class="btn main lk-again">${esc(T('🔁 다시 하기'))}</button><button type="button" class="btn lk-close">${esc(T('닫기'))}</button></div>`;
     document.body.appendChild(ov);
     const cv = ov.querySelector('.lk-cv'), g = cv.getContext('2d');
@@ -364,6 +367,9 @@ const LUCKY = (() => {
     const countEl = ov.querySelector('.lk-count'), rankEl = ov.querySelector('.lk-rank'), finalEl = ov.querySelector('.lk-final');
     const startAt = performance.now();
     let arrived = 0; // GOAL 통과 순서
+    // 전체 순위 : 사람마다 가장 먼저 들어온 구슬 하나만 (나머지 구슬은 지운다)
+    const ranking = [], ranked = new Set();
+    let winSim = 0, boardAt = 0;
     let lastLeft = null, lastLead = null, wasNear = false, eatAt = 0;
     let released = false, winner = null, raf = 0, last = startAt, simT = 0, camY = 0, slow = 1, rankAt = 0;
     const STEP = 1000 / 120;
@@ -387,7 +393,7 @@ const LUCKY = (() => {
       if (released && !winner && lead && lead !== lastLead) { if (lastLead) SND.lead(); lastLead = lead; }
       // 결승 직전 슬로모션
       const near = released && !winner && lead && lead.position.y > GOAL - 230;
-      slow += ((near ? 0.55 : 1) - slow) * 0.08;
+      slow += ((near ? 0.55 : winner && !boardAt ? 2.6 : 1) - slow) * 0.08;
       finalEl.hidden = !near;
       if (near && !wasNear) SND.final();
       wasNear = near;
@@ -448,7 +454,15 @@ const LUCKY = (() => {
       if (n >= 6) acc = 0;
       // 구슬 정리 : 끼어 멈추면 살짝 튕기고, 흔적을 남긴다
       balls.forEach((b) => {
-        if (b.position.y > GOAL && !b.done) { b.done = true; b.order = ++arrived; if (!winner) finish(b); }
+        if (b.position.y > GOAL && !b.done) {
+          b.done = true; b.order = ++arrived;
+          if (!ranked.has(b.owner.id)) {
+            ranked.add(b.owner.id); ranking.push(b.owner);
+            // 같은 사람의 다른 구슬은 지운다 (가장 빠른 구슬만 순위에)
+            balls.forEach((o) => { if (o.owner.id === b.owner.id && o !== b && !o.done) { o.done = true; o.gone = true; Composite.remove(world, o); } });
+            if (!winner) finish(b); else { SND.lead(); pops.push({ x: b.position.x, y: GOAL - 30, text: `${ranking.length}${T('위')} ${b.owner.name}`, color: colors[b.owner.id], at: performance.now() }); }
+          }
+        }
         if (released && !b.done && !b.eat && b.speed < 0.25) { b.still += dt; if (b.still > 1200) { Body.setVelocity(b, { x: rnd(-4, 4), y: -rnd(2, 5) }); b.still = 0; } } else b.still = 0;
         b.trail.push(b.position.x, b.position.y); if (b.trail.length > 16) b.trail.splice(0, 2);
       });
@@ -456,13 +470,19 @@ const LUCKY = (() => {
       // 화면에 코스가 세로로 760 정도 보이게 (가로가 좁은 화면은 폭에 맞춤)
       const sc = Math.min(VW / W, VH / 760);
       const viewH = VH / sc;
-      const target = winner ? winner.ball.position.y : lead ? lead.position.y : 0;
+      const target = winner && (performance.now() - winner.at < 2500 || !lead) ? winner.ball.position.y : lead ? lead.position.y : 0;
       const want = Math.max(0, Math.min(H - viewH, target - viewH * 0.45));
       camY += (want - camY) * (released ? 0.08 : 1);
       draw(sc, viewH, lead);
       drawMini(lead);
       if (now - rankAt > 250) { rankAt = now; drawRank(); }
-      if (!winner || now - winner.at < 4000) raf = requestAnimationFrame(frame);
+      if (winner && !boardAt) {
+        if (now - winner.at > 3000) { ov.querySelector('.lk-win').hidden = true; }
+        const prog = ov.querySelector('.lk-prog');
+        prog.hidden = now - winner.at < 3000; prog.textContent = T('남은 순위를 정하는 중... {a} / {b}', { a: ranking.length, b: list.length });
+        if (ranking.length >= list.length || simT - winSim > 45000) showBoard();
+      }
+      if (!boardAt || now - boardAt < 2000) raf = requestAnimationFrame(frame);
     }
 
     /* ---------- 그리기 ---------- */
@@ -527,7 +547,7 @@ const LUCKY = (() => {
       }
       // 구슬 : 흔적 → 몸통 → 광택
       balls.forEach((b) => {
-        if (b.position.y < camY - 40 || b.position.y > camY + viewH + 40) return;
+        if (b.gone || b.position.y < camY - 40 || b.position.y > camY + viewH + 40) return;
         const c = colors[b.owner.id];
         if (b.eat) {
           const f = Math.max(0, (b.eat.until - simT) / 1100), ang = simT / 60;
@@ -692,6 +712,7 @@ const LUCKY = (() => {
       mg.fillStyle = 'rgba(255,255,255,.08)'; mg.fillRect(mw * 0.35, 0, mw * 0.3, mh);
       mg.fillStyle = '#ffd166'; mg.fillRect(0, mh - 3 * dpr, mw, 3 * dpr);
       balls.forEach((b) => {
+        if (b.gone) return;
         const py = Math.min(1, Math.max(0, b.position.y / GOAL)) * (mh - 6 * dpr) + 3 * dpr;
         mg.fillStyle = colors[b.owner.id]; mg.beginPath(); mg.arc(mw * 0.5 + ((b.position.x / W) - 0.5) * mw * 0.7, py, (b === lead ? 4 : 2.2) * dpr, 0, Math.PI * 2); mg.fill();
       });
@@ -699,8 +720,8 @@ const LUCKY = (() => {
     function drawRank() {
       // 사람마다 가장 앞선 구슬 기준 순위
       const best = {};
-      balls.forEach((b) => { const v = b.done ? GOAL + 10000 - b.order : b.position.y; if (!(b.owner.id in best) || v > best[b.owner.id]) best[b.owner.id] = v; });
-      const top = list.slice().sort((a, b) => best[b.id] - best[a.id]).slice(0, 5);
+      balls.forEach((b) => { if (b.gone) return; const v = b.done ? GOAL + 10000 - b.order : b.position.y; if (!(b.owner.id in best) || v > best[b.owner.id]) best[b.owner.id] = v; });
+      const top = list.slice().sort((a, b) => best[b.id] - best[a.id]).slice(0, winner ? 8 : 5);
       rankEl.innerHTML = top.map((p, k) => `<li><i>${k + 1}</i><b style="background:${colors[p.id]}"></b>${esc(p.name)}<em>${best[p.id] > GOAL ? '🏁' : `${Math.round((best[p.id] / GOAL) * 100)}%`}</em></li>`).join('');
     }
     function finish(ball) {
@@ -710,12 +731,26 @@ const LUCKY = (() => {
       const el = ov.querySelector('.lk-win');
       el.innerHTML = `<small>🏆 ${esc(T('당첨'))}</small><b style="color:${colors[p.id]}">${esc(p.name)}</b>`;
       el.hidden = false;
-      ov.querySelector('.lk-btns').hidden = false;
+      winSim = simT;
       drawRank();
       try { if (typeof FX !== 'undefined') { FX.fireworks(3); setTimeout(() => FX.confetti(3), 500); } } catch (e) { /* 무시 */ }
       SND.win();
       try { const a = new Audio('sounds/champion.ogg'); a.volume = 0.7; a.play().catch(() => {}); } catch (e) { /* 무시 */ }
       done(p);
+    }
+    function showBoard() {
+      boardAt = performance.now();
+      // 끝까지 못 들어온 사람은 가장 앞선 구슬 위치로 순위를 매긴다
+      const best = {};
+      balls.forEach((b) => { if (!b.gone && (!(b.owner.id in best) || b.position.y > best[b.owner.id])) best[b.owner.id] = b.position.y; });
+      list.filter((q) => !ranked.has(q.id)).sort((a, b) => (best[b.id] || 0) - (best[a.id] || 0)).forEach((q) => { ranked.add(q.id); ranking.push(q); });
+      ov.querySelector('.lk-win').hidden = true; ov.querySelector('.lk-prog').hidden = true;
+      const medal = (k) => (k === 0 ? '🥇' : k === 1 ? '🥈' : k === 2 ? '🥉' : `${k + 1}`);
+      ov.querySelector('.lk-board ol').innerHTML = ranking.map((q, k) => `<li class="${k < 3 ? 'top' : ''}"><i>${medal(k)}</i><b style="background:${colors[q.id]}"></b><span>${esc(q.name)}</span></li>`).join('');
+      ov.querySelector('.lk-board').hidden = false;
+      ov.querySelector('.lk-btns').hidden = false;
+      SND.win();
+      if (opts.onRank) opts.onRank(ranking.map((q) => ({ id: q.id, name: q.name })));
     }
     const shut = () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); Engine.clear(engine); SND.close(); ov.remove(); };
     ov.querySelector('.lk-close').addEventListener('click', shut);

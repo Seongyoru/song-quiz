@@ -135,7 +135,7 @@ const ROOM = (() => {
     S.drawing = true; S.open = false; S.locked = null; hideBig(); pub();
     closeDlg();
     if (window.SQ) window.SQ.stop();
-    LUCKY.run(people, (w) => { S.drawing = false; S.draw = { id: w.id, name: w.name, n: (S.draw ? S.draw.n : 0) + 1 }; pub(); }, { again: lucky })
+    LUCKY.run(people, (w) => { S.drawing = false; S.draw = { id: w.id, name: w.name, n: (S.draw ? S.draw.n : 0) + 1 }; pub(); }, { again: lucky, onRank: (rk) => { if (S.draw) { S.draw.rank = rk; pub(); } } })
       .catch(() => { S.drawing = false; pub(); alert(T('럭키드로우를 불러오지 못했어요. 인터넷 연결을 확인해 주세요')); });
   }
   function newRound() { if (role !== 'host') return; S.round += 1; S.open = true; S.locked = null; S.blocked = []; S.cool = {}; hideBig(); pub(); }
@@ -256,7 +256,8 @@ const ROOM = (() => {
       const d = P && P.draw;
       $('#rpDraw').hidden = !(P && (P.drawing || d));
       $('#rpDraw').className = `rp-draw ${d && d.id === myId && !P.drawing ? 'me' : ''}`;
-      $('#rpDraw').textContent = P && P.drawing ? T('🎰 럭키드로우 진행 중...') : d ? (d.id === myId ? T('🎉 럭키드로우 당첨! 축하해요!') : T('🎉 럭키드로우 당첨 : {name}', { name: d.name })) : '';
+      const myRank = d && d.rank ? d.rank.findIndex((x) => x.id === myId) + 1 : 0;
+      $('#rpDraw').textContent = P && P.drawing ? T('🎰 럭키드로우 진행 중...') : d ? (d.id === myId ? T('🎉 럭키드로우 1위! 축하해요!') : myRank ? T('🎰 럭키드로우 {n}위 (1위 : {name})', { n: myRank, name: d.name }) : T('🎉 럭키드로우 당첨 : {name}', { name: d.name })) : '';
       $('#rpBuzz').className = `rp-buzz ${cls}`;
       $('#rpBuzz').disabled = cls !== 'ready';
       $('#rpMsg').textContent = msg;

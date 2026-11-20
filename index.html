@@ -45,6 +45,7 @@
     <div class="artist-head">
       <a class="back" href="#/" data-t="← 아티스트"></a>
       <h2 id="artistName"></h2>
+      <button type="button" class="chip sl-btn" id="slBtn" data-t="📋 곡 목록"></button>
       <div class="lvl" id="lvl" hidden>
         <button type="button" data-lvl="normal" data-t="일반"></button><button type="button" data-lvl="hard" data-t="하드"></button>
       </div>
@@ -309,6 +310,19 @@
 </footer>
 
 <!-- 도움말 -->
+<div class="modal" id="songList" hidden>
+  <div class="modal-card sl-card">
+    <button type="button" class="room-x" id="slClose" aria-label="닫기">✕</button>
+    <h3 id="slTitle"></h3>
+    <div class="sl-tools">
+      <input id="slSearch" type="search" autocomplete="off" data-t-ph="검색 (제목 · 한국어 · 영어)">
+      <div class="seg" id="slLvl"><button type="button" data-v="all" class="on" data-t="전체"></button><button type="button" data-v="normal" data-t="일반"></button><button type="button" data-v="hard" data-t="하드 전용"></button></div>
+      <span class="sl-count" id="slCount"></span>
+    </div>
+    <div class="sl-wrap"><table class="sl-table" id="slTable"></table></div>
+    <p class="room-note" data-t="한글로 적은 답은 표기가 한두 글자 달라도 정답으로 인정해요."></p>
+  </div>
+</div>
 <div class="modal" id="help" hidden>
   <div class="modal-card">
     <h3 data-t="이렇게 놀아요"></h3>

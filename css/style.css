@@ -758,3 +758,31 @@ body.big .rbg-txt b { font-size: clamp(36px, 5vw, 56px); }
 .lucky .lk-btns .btn { position: static; transform: none; width: auto; margin: 0; padding: 14px 30px; font-size: 17px; }
 
 .rb-status.hot { color: var(--ink); font-size: 15px; padding: 4px 12px; border-radius: 99px; background: color-mix(in srgb, var(--ac, #3fae3a) 16%, #fff); border: 1.5px solid var(--ac, #3fae3a); }
+
+/* 곡 목록 */
+.sl-btn { margin-left: auto; align-self: center; font-weight: 800; }
+.sl-btn + .lvl { margin-left: 0; }
+.sl-card { position: relative; width: min(980px, 100%); }
+.sl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.sl-tools input { flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 12px; font-size: 15px; }
+.sl-tools .seg button { min-width: 0; padding: 8px 14px; font: 700 14px var(--fk); }
+.sl-count { font-weight: 800; color: var(--ink2); }
+.sl-wrap { max-height: 62vh; overflow: auto; border: 1.5px solid var(--line); border-radius: 14px; }
+.sl-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sl-table th { position: sticky; top: 0; background: #f6f7f4; text-align: left; padding: 8px 10px; font-size: 12px; color: var(--ink2); z-index: 1; }
+.sl-table td { padding: 7px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+.sl-table td:first-child { color: var(--ink2); width: 36px; }
+.sl-table td b { font-family: var(--fj); }
+.sl-tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.sl-tag.n { background: color-mix(in srgb, var(--ac, #3fae3a) 15%, #fff); color: var(--ac, #3fae3a); }
+.sl-tag.h { background: #fde6e7; color: #e0484f; }
+
+/* 럭키드로우 전체 순위 */
+.lucky .lk-prog { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); padding: 10px 20px; border-radius: 99px; background: rgba(13, 16, 36, .82); color: #ffd166; font-weight: 800; border: 1px solid rgba(255, 209, 102, .5); }
+.lucky .lk-board { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: min(460px, 92vw); max-height: 72vh; overflow: auto; padding: 22px 22px 16px; border-radius: 26px; background: rgba(13, 16, 36, .92); border: 2px solid #ffd166; box-shadow: 0 0 60px rgba(255, 209, 102, .35); color: #fff; animation: pop .5s cubic-bezier(.3, 1.4, .5, 1); }
+.lucky .lk-board h3 { font: 700 26px var(--fd); text-align: center; color: #ffd166; margin-bottom: 12px; }
+.lucky .lk-board ol { display: grid; gap: 6px; }
+.lucky .lk-board li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, .06); font-weight: 800; font-size: 17px; }
+.lucky .lk-board li.top { background: rgba(255, 209, 102, .14); font-size: 20px; }
+.lucky .lk-board li i { width: 30px; text-align: center; font-style: normal; font-family: var(--fd); color: #ffd166; }
+.lucky .lk-board li b { width: 14px; height: 14px; border-radius: 50%; flex: none; }

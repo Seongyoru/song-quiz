@@ -123,6 +123,29 @@
     h.push(I18N.lang === 'ko' && k && k !== c ? T('제목의 첫 글자는 「{c}」, 한글로는 「{k}」예요', { c, k }) : T('제목의 첫 글자는 「{c}」예요', { c }));
     return h;
   }
+  // 한글 답은 외래어 표기가 조금 달라도 인정 : 자모로 쪼개 비교해서 짧으면 1개, 길면 2개 차이까지
+  const jamo = (str) => [...str].map((ch) => {
+    const c = ch.charCodeAt(0) - 0xac00;
+    return c >= 0 && c < 11172 ? String.fromCharCode(0x1100 + Math.floor(c / 588), 0x1161 + Math.floor((c % 588) / 28)) + (c % 28 ? String.fromCharCode(0x11a7 + (c % 28)) : '') : ch;
+  }).join('');
+  function editDist(a, b) {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  }
+  function isAnswer(s, v) {
+    const n = norm(v);
+    if (!n) return false;
+    if (answers(s).includes(n)) return true;
+    if (!/[가-힣]/.test(n)) return false;
+    const jn = jamo(n);
+    return [s.ko, ...(s.alias || '').split('|')].filter((x) => x && /[가-힣]/.test(x)).some((x) => {
+      const jx = jamo(norm(x));
+      const allow = jx.length >= 9 ? 2 : jx.length >= 5 ? 1 : 0;
+      return Math.abs(jx.length - jn.length) <= allow && editDist(jx, jn) <= allow;
+    });
+  }
   const answers = (s) => [s.t, s.t.replace(/\s*[(（].*?[)）]\s*/g, ''), s.t.replace(/\s*feat\..*$/i, ''), s.ko, s.en, ...(s.alias || '').split('|')]
     .map(norm).filter(Boolean);
 
@@ -266,7 +289,7 @@
     if (Q.state !== 'play') return;
     const v = $('#answerInput').value.trim();
     if (!v) { $('#answerInput').focus(); return; }
-    if (answers(A.songs[Q.song]).includes(norm(v))) { if (window.ROOM) window.ROOM.answer(true); finish('right'); return; }
+    if (isAnswer(A.songs[Q.song], v)) { if (window.ROOM) window.ROOM.answer(true); finish('right'); return; }
     if (window.ROOM) window.ROOM.answer(false);
     if (!Q.wrong.includes(v)) Q.wrong.push(v);
     sfx('wrong', 0.5);
@@ -326,6 +349,9 @@
    *  3초 → 6초 → … 15초까지 늘릴 수 있다
    * ========================================================= */
   const LS_STEP = 3, LS_MAX = 15;
+  // 배속 · 동시 재생은 10초부터 (19초까지), 나머지는 3초부터 (15초까지)
+  const lsStart = (kind) => (kind === 'hl' || kind === 'mix' ? 10 : LS_STEP);
+  const lsMax = (kind) => (kind === 'hl' || kind === 'mix' ? 19 : LS_MAX);
   let L = null; // { artist, kind, no, song, songs:[], found:Set, item, secs, state, wrong, used:Set, score, total }
   let ytApi = null, yt = null, lsTimer = 0, lsWatch = 0;
   const players = {}; // div id → Promise<YT.Player>
@@ -544,7 +570,7 @@
     const keep = L && L.artist === A.id ? L : null;
     const pool = lsPoolOf(kind);
     let used = keep && keep.kind === kind ? keep.used : new Set();
-    L = { artist: A.id, kind, no: keep ? keep.no + (same === 'same' && (keep.state === 'play' || keep.empty) ? 0 : 1) : 1, song: -1, songs: [], found: new Set(), item: null, secs: LS_STEP, state: 'play', wrong: [], used, score: keep ? keep.score : 0, total: keep ? keep.total : 0, played: false };
+    L = { artist: A.id, kind, no: keep ? keep.no + (same === 'same' && (keep.state === 'play' || keep.empty) ? 0 : 1) : 1, song: -1, songs: [], found: new Set(), item: null, secs: lsStart(kind), state: 'play', wrong: [], used, score: keep ? keep.score : 0, total: keep ? keep.total : 0, played: false };
     $('#lsInput').value = '';
     $('#lsMsg').textContent = '';
     if (!pool.length) { L.empty = true; renderListen(); return; }
@@ -595,7 +621,7 @@
     $('#lsPlay').disabled = !!L.empty;
     $('#lsMore').hidden = L.kind === 'lyric';
     $('#lsMore').textContent = T('+{n}초 더 듣기', { n: LS_STEP });
-    $('#lsMore').disabled = done || L.secs >= LS_MAX || !!L.empty;
+    $('#lsMore').disabled = done || L.secs >= lsMax(L.kind) || !!L.empty;
     $('#lsSec').textContent = done ? '' : L.empty ? '' : L.kind === 'lyric' ? T('가사') : L.kind === 'mix' ? `${L.songs.length}${T('곡')} · ${L.secs}${T('초')}` : `${L.secs}${T('초')}`;
     if (L.empty) $('#lsMsg').textContent = T(L.kind === 'lyric' ? '「가사 목록 편집」에 가사를 먼저 적어 주세요' : L.kind === 'rev' ? '음원 파일을 먼저 골라 주세요' : '이 난이도에는 들을 수 있는 곡이 없어요');
     $('#lsCover').hidden = done;
@@ -714,7 +740,7 @@
     L.played = true;
   }
   function lsMore() {
-    if (!L || L.state !== 'play' || L.secs >= LS_MAX || L.empty || L.kind === 'lyric') return;
+    if (!L || L.state !== 'play' || L.secs >= lsMax(L.kind) || L.empty || L.kind === 'lyric') return;
     L.secs += LS_STEP;
     sfx('hint', 0.4);
     renderListen();
@@ -724,7 +750,7 @@
     L.state = state; L.total += 1;
     // 동시 재생은 한 곡이라도 맞혔으면 맞힌 문제로
     if (state === 'reveal' && L.kind === 'mix' && L.found.size) { L.score += 1; FX.celebrate(1); }
-    if (state === 'right') { L.score += 1; FX.celebrate(L.kind === 'lyric' || L.secs <= 3 ? 3 : L.secs <= 6 ? 2 : 1); }
+    if (state === 'right') { const s0 = lsStart(L.kind); L.score += 1; FX.celebrate(L.kind === 'lyric' || L.secs <= s0 ? 3 : L.secs <= s0 + 3 ? 2 : 1); }
     sfx(state === 'right' ? 'correct' : 'reveal');
     lsStop();
     renderListen();
@@ -748,7 +774,7 @@
     if (!v) { $('#lsInput').focus(); return; }
     const n = norm(v);
     if (L.kind === 'mix') {
-      const hit = L.songs.find((i) => !L.found.has(i) && answers(A.songs[i]).includes(n));
+      const hit = L.songs.find((i) => !L.found.has(i) && isAnswer(A.songs[i], v));
       if (hit != null) {
         L.found.add(hit);
         $('#lsInput').value = '';
@@ -761,8 +787,8 @@
         return;
       }
     } else {
-      const ok = L.song >= 0 ? answers(A.songs[L.song]) : [norm(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))];
-      if (ok.includes(n)) { if (window.ROOM) window.ROOM.answer(true); lsFinish('right'); return; }
+      const ok = L.song >= 0 ? isAnswer(A.songs[L.song], v) : [norm(L.kind === 'lyric' ? L.item.title : RV.files[L.file].name.replace(/\.[^.]+$/, ''))].includes(n);
+      if (ok) { if (window.ROOM) window.ROOM.answer(true); lsFinish('right'); return; }
     }
     if (window.ROOM) window.ROOM.answer(false);
     if (!L.wrong.includes(v)) L.wrong.push(v);
@@ -1147,6 +1173,21 @@
     try { Object.keys(localStorage).filter((k) => /^sq_ud_/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 무시 */ }
     location.reload();
   });
+  // 곡 목록 : 일본어 제목 · 한국어 읽기 · 영어 · 다른 정답 · 일반/하드 (출제자 참고용)
+  let slLvl = 'all';
+  function renderSongList() {
+    const q = norm($('#slSearch').value);
+    const rows = A.songs.map((s, i) => ({ s, i, normal: !(A.normalIn || A.normalOut) || (A.normalIn ? A.normalIn.includes(s.t) : !A.normalOut.includes(s.t)) }))
+      .filter((r) => slLvl === 'all' || (slLvl === 'normal' ? r.normal : !r.normal))
+      .filter((r) => !q || [r.s.t, r.s.ko, r.s.en, r.s.alias].some((x) => x && norm(x).includes(q)));
+    $('#slCount').textContent = T('{n}곡', { n: rows.length });
+    $('#slTable').innerHTML = `<thead><tr><th>#</th><th>${esc(T('제목'))}</th><th>${esc(T('한국어'))}</th><th>${esc(T('영어'))}</th><th>${esc(T('다른 정답'))}</th><th>${esc(T('모드'))}</th></tr></thead><tbody>${rows.map((r, k) => `<tr><td>${k + 1}</td><td><b>${esc(r.s.t)}</b></td><td>${esc(r.s.ko || '')}</td><td>${esc(r.s.en && r.s.en !== r.s.t ? r.s.en : '')}</td><td>${esc((r.s.alias || '').split('|').filter(Boolean).join(', '))}</td><td><span class="sl-tag ${r.normal ? 'n' : 'h'}">${esc(T(r.normal ? '일반 · 하드' : '하드'))}</span></td></tr>`).join('')}</tbody>`;
+  }
+  $('#slBtn').addEventListener('click', () => { if (!A) return; $('#slTitle').textContent = `${A.name} · ${T('곡 목록')}`; $('#songList').hidden = false; renderSongList(); $('#slSearch').focus(); });
+  $('#slClose').addEventListener('click', () => { $('#songList').hidden = true; });
+  $('#songList').addEventListener('click', (e) => { if (e.target.id === 'songList') $('#songList').hidden = true; });
+  $('#slSearch').addEventListener('input', renderSongList);
+  $$('#slLvl [data-v]').forEach((b) => b.addEventListener('click', () => { slLvl = b.dataset.v; $$('#slLvl [data-v]').forEach((x) => x.classList.toggle('on', x === b)); renderSongList(); }));
   const syncSfx = () => { $('#sfxBtn').textContent = sfxOn() ? '🔊' : '🔇'; $('#sfxBtn').setAttribute('aria-label', T(sfxOn() ? '효과음 끄기' : '효과음 켜기')); };
   $('#sfxBtn').addEventListener('click', () => { store.set('sq_sfx', !sfxOn()); syncSfx(); sfx('hint', 0.45); });
   syncSfx();
