@@ -101,14 +101,21 @@ const ROOM = (() => {
     pub();
     openDlg();
   }
-  // keepOpen : 동시 재생처럼 한 곡을 맞혀도 남은 곡이 있으면 버저를 다시 연다
+  // keepOpen : 동시 재생처럼 남은 곡이 있으면 맞힌 사람이 계속 도전 (틀리면 다른 사람에게 기회)
   function judge(ok, fromApp, keepOpen) {
     if (role !== 'host' || !S.locked) return;
     const p = S.players[S.locked.id];
+    if (ok && keepOpen) {
+      // 동시 재생에서 한 곡을 맞힘 : 1점 · 구슬 1개, 그 사람이 버저를 쥔 채로 바로 다음 곡에 도전
+      if (p) { p.score += 1; p.marbles = mOf(p) + 1; }
+      sfx('correct', 0.5);
+      toastBig(S.locked.name, 0, 'buzz', T('정답! +1 · 다음 곡도 맞혀 보세요'));
+      pub();
+      return;
+    }
     if (ok) {
       if (p) { p.score += 1; p.marbles = mOf(p) + 1; }
-      S.locked = null; S.open = !!keepOpen;
-      if (keepOpen) sfx('correct', 0.5);
+      S.locked = null; S.open = false;
       hideBig();
       pub();
       if (!fromApp && window.SQ) window.SQ.right();

@@ -753,7 +753,7 @@
         L.found.add(hit);
         $('#lsInput').value = '';
         if (L.found.size === L.songs.length) { if (window.ROOM) window.ROOM.answer(true); lsFinish('right'); return; }
-        // 한 곡만 맞혀도 점수 : 방에서는 버저를 누른 사람에게 바로 주고, 남은 곡을 위해 버저를 다시 연다
+        // 한 곡만 맞혀도 점수 : 방에서는 버저를 누른 사람에게 바로 1점, 그 사람이 이어서 다음 곡에 도전
         if (window.ROOM) window.ROOM.answer(true, true);
         sfx('up-right', 0.5);
         renderListen();
