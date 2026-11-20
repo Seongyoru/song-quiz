@@ -383,7 +383,44 @@
   /* ---------- 가사 Q : 「곡 제목 | 가사」 목록 (가수마다, 이 브라우저에만 저장) ---------- */
   const lyKey = () => `sq_ly_${A.id}`;
   /* ---------- 가사 Q 더빙 : 출제자 컴퓨터 폴더의 「곡 제목.m4a」 파일을 읽어 튼다 (어디에도 올리지 않음) ---------- */
-  const DUB = { artist: null, files: new Map(), audio: null, saved: false };
+  const DUB = { artist: null, files: new Map(), audio: null, saved: false, key: null, meta: {}, cache: new Map() };
+  // 사이트에 올린 더빙 (dub/<가수>/) 은 비밀번호로 암호화돼 있다 : PBKDF2 → AES-GCM 으로 브라우저 안에서 푼다
+  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  async function dubMeta() {
+    if (!(A.id in DUB.meta)) {
+      DUB.meta[A.id] = null;
+      try { const r = await fetch(`dub/${A.id}/meta.json`, { cache: 'no-cache' }); if (r.ok) DUB.meta[A.id] = await r.json(); } catch (e) { /* 없으면 잠금 칸을 숨긴다 */ }
+    }
+    return DUB.meta[A.id];
+  }
+  async function dubOpen(buf, key) {
+    const u = new Uint8Array(buf);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(0, 12) }, key, u.slice(12));
+  }
+  async function dubUnlock(pass, quiet) {
+    const meta = await dubMeta();
+    if (!meta || !pass) return false;
+    try {
+      const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+      const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(meta.salt), iterations: meta.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+      const list = JSON.parse(new TextDecoder().decode(await dubOpen(await (await fetch(`dub/${A.id}/list.bin`)).arrayBuffer(), key)));
+      DUB.artist = A.id; DUB.key = key; DUB.files = new Map(); DUB.cache = new Map();
+      list.forEach((x) => { const t = norm(x.t); const i = A.songs.findIndex((s) => norm(s.t) === t || answers(s).includes(t)); if (i >= 0) DUB.files.set(i, { f: x.f, type: x.type }); });
+      store.set(`sq_dubpw_${A.id}`, pass);
+      if (!quiet) dubAfterLoad(DUB.files.size); else if (L && L.kind === 'lyric') { L.used = new Set(); newListen('same'); }
+      return true;
+    } catch (e) {
+      if (!quiet) toast(T('비밀번호가 맞지 않아요'));
+      return false;
+    }
+  }
+  // 곡 하나의 소리 : 고른 폴더의 파일이면 그대로, 사이트 더빙이면 받아서 풀기
+  async function dubBlob(i) {
+    const v = DUB.files.get(i);
+    if (v instanceof Blob) return v;
+    if (!DUB.cache.has(i)) DUB.cache.set(i, fetch(`dub/${DUB.artist}/${v.f}`).then((r) => r.arrayBuffer()).then((buf) => dubOpen(buf, DUB.key)).then((plain) => new Blob([plain], { type: v.type })));
+    return DUB.cache.get(i);
+  }
   function dubLoad(files) {
     DUB.artist = A.id; DUB.files = new Map();
     files.forEach((f) => {
@@ -500,6 +537,13 @@
       $('#lyNote').textContent = T('가사 {n}개', { n: lyItems().length });
       $('#dubNote').textContent = dubOn() ? T('더빙 {a}곡 중 이 난이도 {b}곡', { a: DUB.files.size, b: lyItems().length }) : T('「곡 제목」 이름의 음성 파일이 든 폴더를 고르면 더빙을 틀어 줘요. 파일은 이 컴퓨터에서만 써요');
       $('#dubAgain').hidden = dubOn() || !DUB.saved;
+      const meta = DUB.meta[A.id];
+      $('#dubLock').hidden = dubOn() || !meta;
+      if (!(A.id in DUB.meta)) dubMeta().then((m) => {
+        // 이 기기에서 전에 맞힌 비밀번호가 있으면 자동으로 푼다
+        const pw = store.get(`sq_dubpw_${A.id}`, '');
+        if (m && pw && !dubOn()) dubUnlock(pw, true); else if (L && L.kind === 'lyric') renderListen();
+      });
       $('#lyEdit').hidden = dubOn(); $('#lyOpts').hidden = dubOn();
     }
     $('#lsNo').textContent = T('{n}번째 문제', { n: L.no });
@@ -591,10 +635,14 @@
     $('#lsEq').classList.add('on');
     L.played = true;
     if (L.item.dub) {
-      const a = new Audio(URL.createObjectURL(DUB.files.get(L.item.song)));
-      DUB.audio = a;
-      a.onended = () => { if (DUB.audio === a) $('#lsEq').classList.remove('on'); };
-      a.play().catch(() => { $('#lsEq').classList.remove('on'); });
+      const want = L.item.song;
+      dubBlob(want).then((blob) => {
+        if (!L || L.kind !== 'lyric' || !L.item || L.item.song !== want) return;
+        const a = new Audio(URL.createObjectURL(blob));
+        DUB.audio = a;
+        a.onended = () => { if (DUB.audio === a) $('#lsEq').classList.remove('on'); };
+        a.play().catch(() => { $('#lsEq').classList.remove('on'); });
+      }).catch(() => { $('#lsEq').classList.remove('on'); toast(T('더빙을 불러오지 못했어요')); });
       return;
     }
     speak(L.item.text, () => { if (L && L.kind === 'lyric') $('#lsEq').classList.remove('on'); });
@@ -980,6 +1028,9 @@
       } catch (e) { if (e && e.name !== 'AbortError') $('#dubFiles').click(); }
     } else $('#dubFiles').click();
   });
+  const tryUnlock = () => { const v = $('#dubPw').value.trim(); if (v) dubUnlock(v).then((ok) => { if (ok) $('#dubPw').value = ''; }); else $('#dubPw').focus(); };
+  $('#dubUnlock').addEventListener('click', tryUnlock);
+  $('#dubPw').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); tryUnlock(); } });
   $('#dubFiles').addEventListener('change', (e) => dubAfterLoad(dubLoad([...e.target.files])));
   $('#dubAgain').addEventListener('click', async () => {
     try {

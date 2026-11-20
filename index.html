@@ -138,8 +138,13 @@
       </div>
       <!-- 가사 Q : 출제자가 적어 둔 가사를 기계 음성이 그대로 읽는다 (이 브라우저에만 저장) -->
       <div class="ls-extra" id="lyBox" hidden>
+        <div class="ly-dub ly-lock" id="dubLock" hidden>
+          <span class="ls-opt-k" data-t="🔒 더빙은 비밀번호가 있어야 들을 수 있어요"></span>
+          <input id="dubPw" type="password" autocomplete="off" data-t-ph="비밀번호">
+          <button type="button" class="btn main" id="dubUnlock" data-t="잠금 풀기"></button>
+        </div>
         <div class="ly-dub">
-          <button type="button" class="btn main" id="dubPick" data-t="🎙️ 더빙 폴더 고르기"></button>
+          <button type="button" class="btn" id="dubPick" data-t="🎙️ 더빙 폴더 고르기"></button>
           <button type="button" class="btn" id="dubAgain" hidden data-t="저번 더빙 폴더 다시 열기"></button>
           <input type="file" id="dubFiles" webkitdirectory multiple hidden>
           <span class="ls-extra-note" id="dubNote"></span>
