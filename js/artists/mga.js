@@ -28,6 +28,7 @@ ARTISTS.push({
     '日々と君', 'WaLL FloWeR', 'リスキーゲーム', '道徳と皿', '恋と吟', 'えほん', 'おもちゃの兵隊', 'FACTORY', 'JOURNEY', 'スマイロブドリーマ',
     'SwitCh', 'On My MiND', 'WHOO WHOO WHOO', 'はじまり', 'SPLASH!!!', 'Folktale', 'How-to', '延々', 'norn', 'Doodle',
     'アンゼンパイ', 'L.P', 'VIP', 'ゼンマイ', '愛情と矛先', '藍', 'キコリ時計', '私', 'SimPle', 'Hug', 'ノニサクウタ', 'ツキマシテハ',
+    'HeLLo', 'Oz', 'Log', '月とアネモネ',
   ],
   albums: {
     Progressive: { d: '2015-02-18', kind: 'mini' },
