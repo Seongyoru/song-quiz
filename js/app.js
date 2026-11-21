@@ -126,7 +126,10 @@
   // 한글 답은 외래어 표기가 조금 달라도 인정 : 자모로 쪼개 비교해서 짧으면 1개, 길면 2개 차이까지
   const jamo = (str) => [...str].map((ch) => {
     const c = ch.charCodeAt(0) - 0xac00;
-    return c >= 0 && c < 11172 ? String.fromCharCode(0x1100 + Math.floor(c / 588), 0x1161 + Math.floor((c % 588) / 28)) + (c % 28 ? String.fromCharCode(0x11a7 + (c % 28)) : '') : ch;
+    // 발음이 같은 모음은 하나로 : ㅐ→ㅔ, ㅒ→ㅖ, ㅙ · ㅚ→ㅞ
+    const SAME = { 1: 5, 3: 7, 10: 15, 11: 15 };
+    const v = Math.floor((c % 588) / 28);
+    return c >= 0 && c < 11172 ? String.fromCharCode(0x1100 + Math.floor(c / 588), 0x1161 + (SAME[v] != null ? SAME[v] : v)) + (c % 28 ? String.fromCharCode(0x11a7 + (c % 28)) : '') : ch;
   }).join('');
   function editDist(a, b) {
     const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
