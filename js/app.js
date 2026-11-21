@@ -349,9 +349,11 @@
    *  3초 → 6초 → … 15초까지 늘릴 수 있다
    * ========================================================= */
   const LS_STEP = 3, LS_MAX = 15;
-  // 배속 · 동시 재생은 10초부터 (19초까지), 나머지는 3초부터 (15초까지)
-  const lsStart = (kind) => (kind === 'hl' || kind === 'mix' ? 10 : LS_STEP);
-  const lsMax = (kind) => (kind === 'hl' || kind === 'mix' ? 19 : LS_MAX);
+  // 배속 · 동시 재생은 10초부터 5초씩 (25초까지), 나머지는 3초부터 3초씩 (15초까지)
+  const longKind = (kind) => kind === 'hl' || kind === 'mix';
+  const lsStart = (kind) => (longKind(kind) ? 10 : LS_STEP);
+  const lsStep = (kind) => (longKind(kind) ? 5 : LS_STEP);
+  const lsMax = (kind) => (longKind(kind) ? 25 : LS_MAX);
   let L = null; // { artist, kind, no, song, songs:[], found:Set, item, secs, state, wrong, used:Set, score, total }
   let ytApi = null, yt = null, lsTimer = 0, lsWatch = 0;
   const players = {}; // div id → Promise<YT.Player>
@@ -620,7 +622,7 @@
     $('#lsPlay').textContent = L.kind === 'lyric' ? T('▶ 읽어 주기') : T('▶ {n}초 듣기', { n: L.secs });
     $('#lsPlay').disabled = !!L.empty;
     $('#lsMore').hidden = L.kind === 'lyric';
-    $('#lsMore').textContent = T('+{n}초 더 듣기', { n: LS_STEP });
+    $('#lsMore').textContent = T('+{n}초 더 듣기', { n: lsStep(L.kind) });
     $('#lsMore').disabled = done || L.secs >= lsMax(L.kind) || !!L.empty;
     $('#lsSec').textContent = done ? '' : L.empty ? '' : L.kind === 'lyric' ? T('가사') : L.kind === 'mix' ? `${L.songs.length}${T('곡')} · ${L.secs}${T('초')}` : `${L.secs}${T('초')}`;
     if (L.empty) $('#lsMsg').textContent = T(L.kind === 'lyric' ? '「가사 목록 편집」에 가사를 먼저 적어 주세요' : L.kind === 'rev' ? '음원 파일을 먼저 골라 주세요' : '이 난이도에는 들을 수 있는 곡이 없어요');
@@ -741,7 +743,7 @@
   }
   function lsMore() {
     if (!L || L.state !== 'play' || L.secs >= lsMax(L.kind) || L.empty || L.kind === 'lyric') return;
-    L.secs += LS_STEP;
+    L.secs += lsStep(L.kind);
     sfx('hint', 0.4);
     renderListen();
     lsPlay();
@@ -750,7 +752,7 @@
     L.state = state; L.total += 1;
     // 동시 재생은 한 곡이라도 맞혔으면 맞힌 문제로
     if (state === 'reveal' && L.kind === 'mix' && L.found.size) { L.score += 1; FX.celebrate(1); }
-    if (state === 'right') { const s0 = lsStart(L.kind); L.score += 1; FX.celebrate(L.kind === 'lyric' || L.secs <= s0 ? 3 : L.secs <= s0 + 3 ? 2 : 1); }
+    if (state === 'right') { const s0 = lsStart(L.kind); L.score += 1; FX.celebrate(L.kind === 'lyric' || L.secs <= s0 ? 3 : L.secs <= s0 + lsStep(L.kind) ? 2 : 1); }
     sfx(state === 'right' ? 'correct' : 'reveal');
     lsStop();
     renderListen();
