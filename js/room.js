@@ -58,6 +58,7 @@ const ROOM = (() => {
 
   /* ---------- 출제자 ---------- */
   const newCode = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
+  const nameKey = (n) => String(n || '').replace(/\s+/g, '').toLowerCase();
   const coolLeft = () => { const o = {}; Object.entries(S.cool || {}).forEach(([id, t]) => { const ms = t - Date.now(); if (ms > 0) o[id] = ms; }); return o; };
   function pub() {
     if (!client || role !== 'host') return;
@@ -69,15 +70,26 @@ const ROOM = (() => {
   function onHostMsg(tp, m) {
     if (tp !== topic(code, 'in')) return;
     if (m.t === 'join' && m.id) {
-      const name = String(m.name || '').slice(0, 16) || '?';
+      const name = String(m.name || '').trim().slice(0, 16) || '?';
       const isNew = !S.players[m.id];
-      const prev = S.players[m.id];
+      let prev = S.players[m.id];
+      // 같은 닉네임으로 다시 들어오면 (나갔다 들어옴 · 다른 기기) 점수와 구슬을 그대로 돌려준다
+      const key = nameKey(name);
+      S.past = S.past || {};
+      if (!prev) {
+        const old = Object.entries(S.players).find(([id, p]) => id !== m.id && p.off && nameKey(p.name) === key);
+        if (old) { prev = old[1]; delete S.players[old[0]]; }
+        else if (S.past[key]) prev = S.past[key];
+      }
+      delete S.past[key];
       S.players[m.id] = { name, score: prev ? prev.score : 0, marbles: prev && prev.marbles != null ? prev.marbles : MARBLES };
       pub();
-      if (isNew) toastBig(name, 1400, 'join', T('입장했어요'));
+      if (isNew) toastBig(name, 1400, 'join', T(prev ? '다시 들어왔어요 · 점수 그대로' : '입장했어요'));
     } else if (m.t === 'leave' && m.id && S.players[m.id]) {
       // 나가기 = 목록에서 뺌, 연결 끊김(창 닫음 · 인터넷) = 회색으로 남겨 두고 다시 들어오면 그대로
-      if (m.soft) S.players[m.id].off = true; else delete S.players[m.id];
+      // 나간 사람의 점수 · 구슬은 닉네임으로 기억해 두었다가 같은 닉네임으로 다시 들어오면 돌려준다
+      if (m.soft) S.players[m.id].off = true;
+      else { const p = S.players[m.id]; S.past = S.past || {}; S.past[nameKey(p.name)] = { name: p.name, score: p.score, marbles: mOf(p) }; delete S.players[m.id]; }
       if (S.locked && S.locked.id === m.id) { S.locked = null; hideBig(); }
       pub();
     } else if (m.t === 'buzz' && m.id && S.players[m.id]) {
@@ -101,15 +113,14 @@ const ROOM = (() => {
     pub();
     openDlg();
   }
-  // keepOpen : 동시 재생처럼 남은 곡이 있으면 맞힌 사람이 계속 도전 (틀리면 다른 사람에게 기회)
+  // keepOpen : 동시 재생에서 일부만 맞혔을 때 그 사람이 계속 도전 (틀리면 다른 사람에게 기회, 점수는 다 맞혀야)
   function judge(ok, fromApp, keepOpen) {
     if (role !== 'host' || !S.locked) return;
     const p = S.players[S.locked.id];
     if (ok && keepOpen) {
-      // 동시 재생에서 한 곡을 맞힘 : 1점 · 구슬 1개, 그 사람이 버저를 쥔 채로 바로 다음 곡에 도전
-      if (p) { p.score += 1; p.marbles = mOf(p) + 1; }
-      sfx('correct', 0.5);
-      toastBig(S.locked.name, 0, 'buzz', T('정답! +1 · 다음 곡도 맞혀 보세요'));
+      // 동시 재생에서 일부만 맞힘 : 점수는 아직, 그 사람이 버저를 쥔 채로 남은 곡까지 다 맞혀야 1점
+      sfx('correct', 0.4);
+      toastBig(S.locked.name, 0, 'buzz', typeof keepOpen === 'string' ? keepOpen : T('맞았어요! 남은 곡도 맞혀 주세요'));
       pub();
       return;
     }

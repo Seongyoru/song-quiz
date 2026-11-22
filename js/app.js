@@ -753,8 +753,6 @@
   }
   function lsFinish(state) {
     L.state = state; L.total += 1;
-    // 동시 재생은 한 곡이라도 맞혔으면 맞힌 문제로
-    if (state === 'reveal' && L.kind === 'mix' && L.found.size) { L.score += 1; FX.celebrate(1); }
     if (state === 'right') { const s0 = lsStart(L.kind); L.score += 1; FX.celebrate(L.kind === 'lyric' || L.secs <= s0 ? 3 : L.secs <= s0 + lsStep(L.kind) ? 2 : 1); }
     sfx(state === 'right' ? 'correct' : 'reveal');
     lsStop();
@@ -779,15 +777,40 @@
     if (!v) { $('#lsInput').focus(); return; }
     const n = norm(v);
     if (L.kind === 'mix') {
-      const hit = L.songs.find((i) => !L.found.has(i) && isAnswer(A.songs[i], v));
-      if (hit != null) {
-        L.found.add(hit);
+      // 두 곡 · 세 곡을 전부 맞혀야 1점. 「곡1, 곡2」 처럼 쉼표 · 슬래시로 한 번에 적어도 된다
+      const hitOf = (x) => L.songs.find((i) => !L.found.has(i) && isAnswer(A.songs[i], x));
+      let hits = [];
+      const one = hitOf(v);
+      if (one != null) hits = [one];
+      else {
+        const parts = v.split(/[,，/、;]+/).map((x) => x.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          // 하나라도 틀리면 전부 틀린 것으로
+          const tmp = [];
+          for (const x of parts) { const h = hitOf(x); if (h == null) break; L.found.add(h); tmp.push(h); }
+          tmp.forEach((h) => L.found.delete(h));
+          if (tmp.length === parts.length) hits = tmp;
+        }
+      }
+      if (hits.length) {
+        hits.forEach((h) => L.found.add(h));
         $('#lsInput').value = '';
         if (L.found.size === L.songs.length) { if (window.ROOM) window.ROOM.answer(true); lsFinish('right'); return; }
-        // 한 곡만 맞혀도 점수 : 방에서는 버저를 누른 사람에게 바로 1점, 그 사람이 이어서 다음 곡에 도전
-        if (window.ROOM) window.ROOM.answer(true, true);
+        // 아직 남은 곡이 있음 : 점수 없이 버저를 누른 사람이 이어서 도전
+        if (window.ROOM) window.ROOM.answer(true, T('{a}곡 중 {b}곡 맞았어요 · 남은 곡도 맞혀 주세요', { a: L.songs.length, b: L.found.size }));
         sfx('up-right', 0.5);
         renderListen();
+        $('#lsInput').focus();
+        return;
+      }
+      // 방에서 버저를 누른 사람이 틀리면 그 사람이 맞힌 곡도 무효 : 다음 사람은 처음부터 전부 맞혀야
+      if (window.ROOM && window.ROOM.answer(false)) {
+        L.found.clear();
+        if (!L.wrong.includes(v)) L.wrong.push(v);
+        sfx('wrong', 0.5);
+        $('#lsInput').value = '';
+        renderListen();
+        const bx = $('#lsInputBox'); bx.classList.remove('shake'); void bx.offsetWidth; bx.classList.add('shake');
         $('#lsInput').focus();
         return;
       }
