@@ -341,7 +341,7 @@
       <input id="bgPw" class="pw" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-t-ph="비밀번호">
       <button type="button" class="btn main" id="bgUnlock" data-t="잠금 풀기"></button>
     </div>
-    <p class="room-note" id="bgNote" hidden data-t="고르면 전체 화면으로 보여요. 화면 오른쪽 · 왼쪽 클릭이나 ← → 로 바꾸고, Esc 로 닫아요."></p>
+    <p class="room-note" id="bgNote" hidden data-t="고르면 전체 화면으로 보여요. 아래 버튼이나 ← → 로 바꾸고, 「숨기기」로 버튼을 감춰요 (화면을 누르면 다시 나와요)."></p>
     <div class="bg-grid" id="bgGrid" hidden></div>
   </div>
 </div>
@@ -351,6 +351,8 @@
     <button type="button" id="bgPrev" aria-label="이전" data-t-label="이전">‹</button>
     <span id="bgName"></span>
     <button type="button" id="bgNext" aria-label="다음" data-t-label="다음">›</button>
+    <i class="bg-sep"></i>
+    <button type="button" class="bg-txt" id="bgHide" data-t="숨기기"></button>
     <button type="button" id="bgExit" aria-label="닫기" data-t-label="닫기">✕</button>
   </div>
 </div>

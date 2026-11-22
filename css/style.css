@@ -848,16 +848,16 @@ body.big .q-left .seg button { padding: 7px 14px; font-size: 17px; }
 .bg-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; background: var(--line); box-shadow: 0 4px 12px rgba(40, 30, 70, .15); transition: transform .15s; }
 .bg-item:hover img, .bg-item:focus-visible img { transform: translateY(-2px); outline: 3px solid var(--ac); }
 .bg-item span { font-size: 12px; color: var(--ink2); padding: 0 2px; text-transform: capitalize; }
-.bg-view { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: #000; cursor: none; }
-.bg-view.ui { cursor: default; }
+.bg-view { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: #000; }
+.bg-view.bare { cursor: none; }
 .bg-view img { width: 100%; height: 100%; object-fit: contain; }
-.bg-bar { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 99px; background: rgba(0, 0, 0, .55); color: #fff; opacity: 0; transition: opacity .3s; pointer-events: none; }
-.bg-view.ui .bg-bar { opacity: 1; pointer-events: auto; }
+.bg-bar { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 99px; background: rgba(0, 0, 0, .55); color: #fff; }
+.bg-view.bare .bg-bar { display: none; }
 .bg-bar button { width: 40px; height: 40px; border-radius: 50%; color: #fff; font-size: 20px; background: rgba(255, 255, 255, .15); }
-.bg-bar span { font: 600 14px var(--fd); padding: 0 6px; text-transform: capitalize; white-space: nowrap; }
+.bg-bar span { min-width: 64px; text-align: center; font: 700 15px var(--fd); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bg-bar .bg-txt { width: auto; padding: 0 16px; border-radius: 99px; font: 700 14px var(--fk); }
+.bg-sep { width: 1px; height: 22px; background: rgba(255, 255, 255, .3); }
 
 /* 단체 사진 배경 버튼은 휴대폰에서는 숨긴다 (노트북 · TV 에서만 씀) */
 @media (max-width: 520px) { #bgBtn { display: none; } }
 
-/* 단체 사진 배경 : 사진에 걸리지 않게 아래 버튼 줄은 아예 숨긴다 (← → 로 넘기고 Esc 로 닫기) */
-.bg-view .bg-bar { display: none; }

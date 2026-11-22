@@ -490,7 +490,7 @@
     }
   }
   /* ---------- 단체 사진 배경 : bg/ 의 암호화된 이미지를 비밀번호(더빙과 같은 방식)로 풀어 전체 화면으로 ---------- */
-  const BG = { key: null, list: [], urls: new Map(), i: 0, hideT: 0 };
+  const BG = { key: null, list: [], urls: new Map(), i: 0 };
   async function bgUnlock(pass, quiet) {
     try {
       const meta = await (await fetch('bg/meta.json', { cache: 'no-cache' })).json();
@@ -523,18 +523,12 @@
       $('#bgGrid').append(b);
     });
   }
-  function bgPoke() {
-    $('#bgView').classList.add('ui');
-    clearTimeout(BG.hideT);
-    BG.hideT = setTimeout(() => $('#bgView').classList.remove('ui'), 2200);
-  }
   async function bgShow(i) {
     const n = BG.list.length;
     BG.i = ((i % n) + n) % n;
     const v = $('#bgView');
-    if (v.hidden) { v.hidden = false; if (v.requestFullscreen) v.requestFullscreen().catch(() => {}); }
-    $('#bgName').textContent = `${BG.i + 1} / ${n} · ${BG.list[BG.i].t}`;
-    bgPoke();
+    if (v.hidden) { v.hidden = false; v.classList.remove('bare'); if (v.requestFullscreen) v.requestFullscreen().catch(() => {}); }
+    $('#bgName').textContent = `${BG.i + 1} / ${n}`;
     const want = BG.i;
     try { const u = await bgUrl(BG.list[want].f); if (want === BG.i) $('#bgImg').src = u; } catch (e) { toast(T('이미지를 불러오지 못했어요')); }
     // 앞뒤 그림은 미리 풀어 둔다
@@ -1348,9 +1342,9 @@
   $('#bgPrev').addEventListener('click', () => bgShow(BG.i - 1));
   $('#bgNext').addEventListener('click', () => bgShow(BG.i + 1));
   $('#bgExit').addEventListener('click', bgClose);
-  $('#bgView').addEventListener('mousemove', bgPoke);
-  // 마우스 : 화면 오른쪽을 누르면 다음 그림, 왼쪽을 누르면 이전 그림
-  $('#bgView').addEventListener('click', (e) => { if (e.target.closest('.bg-bar')) return; bgShow(BG.i + (e.clientX >= window.innerWidth / 2 ? 1 : -1)); });
+  // 숨기기 : 버튼 줄과 마우스 커서를 감춘다 → 화면을 누르면 다시 나온다
+  $('#bgHide').addEventListener('click', () => $('#bgView').classList.add('bare'));
+  $('#bgView').addEventListener('click', (e) => { if (!e.target.closest('.bg-bar')) $('#bgView').classList.remove('bare'); });
   // Esc 로 전체 화면이 풀리면 보기도 닫는다
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !$('#bgView').hidden) $('#bgView').hidden = true; });
   document.addEventListener('keydown', (e) => {
