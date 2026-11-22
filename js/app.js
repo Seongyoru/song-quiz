@@ -635,6 +635,14 @@
     if (L.empty) $('#lsMsg').textContent = T(L.kind === 'lyric' ? '「가사 목록 편집」에 가사를 먼저 적어 주세요' : L.kind === 'rev' ? '음원 파일을 먼저 골라 주세요' : '이 난이도에는 들을 수 있는 곡이 없어요');
     $('#lsCover').hidden = done;
     $('#lsCover').classList.toggle('solid', !yk);
+    // 가리개 그림은 퀴즈마다 다르게 : 인트로 · 배속(빨리 도는 판) · 아웃트로 · 동시 재생(판 여러 장) · 가사(말풍선)
+    const cv = $('#lsCover'), rt = lsRate();
+    cv.dataset.kind = L.kind;
+    cv.dataset.n = L.kind === 'mix' ? (L.songs.length || lsMixN()) : 1;
+    cv.style.setProperty('--spin', `${(1.8 / Math.max(0.25, L.kind === 'hl' ? rt : 1)).toFixed(2)}s`);
+    $('#lsBadge').textContent = { intro: 'INTRO', hl: `${rt}x SPEED`, outro: 'OUTRO', mix: 'MASHUP', lyric: 'LYRICS' }[L.kind] || '';
+    $('#lsKeys').textContent = L.kind === 'lyric' ? T('키보드 : 스페이스 = 읽어 주기 · 엔터 = 답 확인 · → = 다음 문제')
+      : T('키보드 : 스페이스 = 듣기 · ↑ = {n}초 더 · 엔터 = 답 확인 · → = 다음 문제', { n: lsStep(L.kind) });
     $('#lsCtrl').hidden = done;
     $('#lsInputBox').hidden = done || !!L.empty;
     $('#lsReveal').hidden = done || !!L.empty;
@@ -1296,7 +1304,8 @@
   $('#lsMix').value = store.get('sq_lsmix', '2');
   $('#lyVoice').value = store.get('sq_lyvoice', 'auto');
   $('#lyRate').value = store.get('sq_lyrate', '1');
-  if (store.get('sq_big', false)) { document.body.classList.add('big'); $('#qBig').classList.add('on'); }
+  // 크게 보기 : 한 번도 고른 적이 없으면 넓은 화면(노트북 · 모니터 · TV)에서는 처음부터 켜 둔다
+  if (store.get('sq_big', window.innerWidth >= 1280)) { document.body.classList.add('big'); $('#qBig').classList.add('on'); }
   syncMediaChip();
   route();
   if (!store.get('sq_seen3', false)) { $('#help').hidden = false; store.set('sq_seen3', true); }
