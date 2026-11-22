@@ -698,10 +698,17 @@
         } else if (now - t0 > 3500) $('#lsMsg').textContent = T('광고가 나오는 중일 수 있어요. 가리개를 열고 건너뛰기를 눌러 주세요');
         return;
       }
-      if (skip && now - (skipAt || armedAt) >= 1000) { skipAt = now; st.forEach((x) => x.p.seekTo(x.p.getCurrentTime() + 1, true)); }
-      const limit = L.secs * 1000 + 1500;
-      const over = st.every((x) => x.p.getCurrentTime() >= x.seg[1] || x.p.getPlayerState() === 0);
-      if (over || now - armedAt > limit) { lsStop(); $('#lsMsg').textContent = ''; }
+      if (skip && now - (skipAt || armedAt) >= 1000) { skipAt = now; st.forEach((x) => { if (!x.end) x.p.seekTo(x.p.getCurrentTime() + 1, true); }); }
+      // 끝은 시계가 아니라 실제 재생 위치로 : 버퍼링 · 광고로 잠깐 멈춰도 들려줄 만큼은 다 들려준다
+      st.forEach((x) => {
+        if (x.end) return;
+        const s = x.p.getPlayerState();
+        if (x.p.getCurrentTime() >= x.seg[1] || s === 0) { x.end = true; if (st.length > 1) x.p.pauseVideo(); return; }
+        // 도중에 멈춰 버린 플레이어는 다시 재생 (유튜브가 다른 플레이어 때문에 멈추는 경우 등)
+        if ((s === 2 || s === 5 || s === -1) && now - (x.kickAt || 0) > 700) { x.kickAt = now; x.kicks = (x.kicks || 0) + 1; x.p.playVideo(); }
+      });
+      const over = st.every((x) => x.end);
+      if (over || now - armedAt > L.secs * 1000 + 8000) { lsStop(); $('#lsMsg').textContent = ''; }
     }, 60);
   }
   function lyPlay() {
