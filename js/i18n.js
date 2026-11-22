@@ -68,6 +68,7 @@ const I18N = (() => {
     '전체 곡': ['全曲', 'All songs'],
     '싱글 · 배포 싱글만': ['シングル・配信シングルのみ', 'Singles only'],
     '크게 보기': ['大きく表示', 'Big text'],
+    '작게 보기': ['小さく表示', 'Normal text'],
     '전체 화면': ['全画面', 'Full screen'],
     '정답을 적어 주세요 (한국어 · 일본어 · 영어)': ['答えを入力（日本語・ローマ字・韓国語OK）', 'Type your answer (Japanese, romaji or Korean)'],
     '답 확인': ['答え合わせ', 'Check'],

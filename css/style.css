@@ -826,3 +826,13 @@ body.big .ls-badge { left: 22px; top: 20px; font-size: 17px; padding: 6px 16px; 
 
 /* 듣기 퀴즈 : 아직 맞힌 기록이 없을 때는 빈 점수 줄을 없애서 「n번째 문제」와 설명을 붙인다 */
 #lsScore:empty { display: none; }
+
+/* 배속 Q · 동시 재생 Q : 배속 · 곡 수 고르기를 「n번째 문제」 오른쪽에 붙여서 세로를 줄인다 */
+.q-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.q-left .ls-opt { margin: 0; padding: 0; gap: 8px; background: none; border: 0; border-radius: 0; justify-content: flex-start; }
+.q-left .ls-opt-k { font-size: 13px; }
+.q-left .seg { gap: 4px; }
+.q-left .seg button { min-width: 0; padding: 5px 11px; border-radius: 10px; font-size: 14px; }
+.q-left .seg button.on { box-shadow: 0 3px 8px color-mix(in srgb, var(--ac) 30%, transparent); }
+body.big .q-left .ls-opt-k { font-size: 16px; }
+body.big .q-left .seg button { padding: 7px 14px; font-size: 17px; }

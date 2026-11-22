@@ -1124,10 +1124,15 @@
   $('#nextBtn2').addEventListener('click', newQuiz);
   $('#answerInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); check(); } });
   $('#qRange').addEventListener('change', () => { store.set('sq_range', range()); if (Q) Q.used = new Set(); newQuiz('same'); });
+  // 크게 보기 ↔ 작게 보기 : 지금 크게 보는 중이면 버튼은 「작게 보기」
+  const syncBig = () => {
+    const big = document.body.classList.contains('big');
+    ['#qBig', '#lsBig'].forEach((s) => { const b = $(s); b.classList.toggle('on', big); b.dataset.t = big ? '작게 보기' : '크게 보기'; b.textContent = T(b.dataset.t); });
+  };
   $('#qBig').addEventListener('click', () => {
     document.body.classList.toggle('big');
-    $('#qBig').classList.toggle('on', document.body.classList.contains('big'));
     store.set('sq_big', document.body.classList.contains('big'));
+    syncBig();
   });
   const syncMediaChip = () => {
     $('#qMedia').classList.toggle('on', mediaOn());
@@ -1308,7 +1313,8 @@
   $('#lsMix').value = store.get('sq_lsmix', '2');
   $('#lyVoice').value = store.get('sq_lyvoice', 'auto');
   $('#lyRate').value = store.get('sq_lyrate', '1');
-  if (store.get('sq_big', false)) { document.body.classList.add('big'); $('#qBig').classList.add('on'); }
+  if (store.get('sq_big', false)) document.body.classList.add('big');
+  syncBig();
   syncMediaChip();
   route();
   if (!store.get('sq_seen3', false)) { $('#help').hidden = false; store.set('sq_seen3', true); }

@@ -107,20 +107,23 @@
         <button type="button" data-kind="mix"><i>🎧</i><b data-t="동시 재생 Q"></b><small data-t="2~3곡 한꺼번에"></small></button>
         <button type="button" data-kind="lyric"><i>🗣️</i><b data-t="가사 Q"></b><small data-t="가사 읽어 주기"></small></button>
       </div>
-      <div class="ls-opt" id="lsRateBox" hidden>
-        <span class="ls-opt-k" data-t="재생 속도"></span>
-        <div class="seg" id="lsRateBtns">
-          <button type="button" data-v="0.25">0.25x</button><button type="button" data-v="0.5">0.5x</button><button type="button" data-v="0.75">0.75x</button><button type="button" data-v="2">2x</button><button type="button" data-v="3">3x</button>
-        </div>
-      </div>
-      <div class="ls-opt" id="lsMixBox" hidden>
-        <span class="ls-opt-k" data-t="동시에 틀 곡 수"></span>
-        <div class="seg" id="lsMixBtns">
-          <button type="button" data-v="2" data-t="2곡"></button><button type="button" data-v="3" data-t="3곡"></button>
-        </div>
-      </div>
       <div class="q-bar">
-        <span class="q-no" id="lsNo"></span>
+        <div class="q-left">
+          <span class="q-no" id="lsNo"></span>
+          <!-- 배속 Q · 동시 재생 Q : 고르는 줄은 문제 번호 바로 오른쪽에 -->
+          <div class="ls-opt" id="lsRateBox" hidden>
+            <span class="ls-opt-k" data-t="재생 속도"></span>
+            <div class="seg" id="lsRateBtns">
+              <button type="button" data-v="0.25">0.25x</button><button type="button" data-v="0.5">0.5x</button><button type="button" data-v="0.75">0.75x</button><button type="button" data-v="2">2x</button><button type="button" data-v="3">3x</button>
+            </div>
+          </div>
+          <div class="ls-opt" id="lsMixBox" hidden>
+            <span class="ls-opt-k" data-t="동시에 틀 곡 수"></span>
+            <div class="seg" id="lsMixBtns">
+              <button type="button" data-v="2" data-t="2곡"></button><button type="button" data-v="3" data-t="3곡"></button>
+            </div>
+          </div>
+        </div>
         <div class="q-tools">
           <select id="lsRate" aria-label="배속">
             <option value="0.25">0.25x</option>
