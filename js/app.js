@@ -637,6 +637,8 @@
     $('#lsCover').classList.toggle('solid', !yk);
     $('#lsCover').dataset.kind = L.kind;
     $('#lsCover').dataset.n = L.kind === 'mix' ? (L.songs.length || lsMixN()) : 1;
+    // 배속 Q : 판이 고른 배속만큼 빨리(느리게) 돈다 (보통 한 바퀴 1.8초)
+    $('#lsCover').style.setProperty('--spin', `${(1.8 / (L.kind === 'hl' ? lsRate() : 1)).toFixed(2)}s`);
     // 가리개 왼쪽 위 라벨 : 지금 어떤 퀴즈인지
     $('#lsBadge').textContent = { intro: 'INTRO', hl: `${lsRate()}x SPEED`, outro: 'OUTRO', mix: 'MASHUP', lyric: 'LYRICS' }[L.kind] || '';
     $('#lsKeys').textContent = L.kind === 'lyric' ? T('키보드 : 스페이스 = 읽어 주기 · 엔터 = 답 확인 · → = 다음 문제')
@@ -1154,7 +1156,11 @@
   $('#lsNext2').addEventListener('click', newListen);
   $('#lsInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); lsCheck(); } });
   $$('#lsKind [data-kind]').forEach((b) => b.addEventListener('click', () => { store.set('sq_lskind', b.dataset.kind); if (L) L.used = new Set(); newListen('same'); }));
-  $('#lsRate').addEventListener('change', () => store.set('sq_lsrate', $('#lsRate').value));
+  $('#lsRate').addEventListener('change', () => {
+    store.set('sq_lsrate', $('#lsRate').value);
+    // 배속을 바꾸면 라벨과 판 도는 속도도 바로 바꾼다
+    if (L && L.kind === 'hl') { $('#lsBadge').textContent = `${lsRate()}x SPEED`; $('#lsCover').style.setProperty('--spin', `${(1.8 / lsRate()).toFixed(2)}s`); }
+  });
   // 큰 버튼 줄 → 숨겨 둔 select 값을 바꾸고 change 를 보낸다
   [['#lsRateBtns', '#lsRate'], ['#lsMixBtns', '#lsMix']].forEach(([box, sel]) => $(box).addEventListener('click', (e) => {
     const b = e.target.closest('[data-v]'); if (!b) return;

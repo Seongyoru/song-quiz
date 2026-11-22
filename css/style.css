@@ -820,3 +820,6 @@ body.big .ls-badge { left: 22px; top: 20px; font-size: 17px; padding: 6px 16px; 
 .ls-cover[data-kind="mix"][data-n="3"] .arm { right: -40%; }
 .ls-cover[data-kind="mix"] .tt.on .vx.v2 { animation-duration: 2.6s; animation-direction: reverse; }
 .ls-cover[data-kind="mix"] .tt.on .vx.v3 { animation-duration: 1.2s; }
+
+/* 배속 Q 가리개 : 판이 배속만큼 빨리(느리게) 돈다 */
+@media (prefers-reduced-motion: no-preference) { .ls-cover[data-kind="hl"] .tt.on .vinyl { animation-duration: var(--spin, 1.8s); } }
