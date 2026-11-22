@@ -856,5 +856,8 @@ body.big .q-left .seg button { padding: 7px 14px; font-size: 17px; }
 .bg-bar button { width: 40px; height: 40px; border-radius: 50%; color: #fff; font-size: 20px; background: rgba(255, 255, 255, .15); }
 .bg-bar span { font: 600 14px var(--fd); padding: 0 6px; text-transform: capitalize; white-space: nowrap; }
 
-/* 휴대폰 : 머리 줄 버튼이 하나 늘어서 넘치지 않게 간격 · 크기를 줄인다 */
-@media (max-width: 420px) { .top-r { gap: 5px; } .top-r .icon-btn { width: 30px; height: 30px; font-size: 14px; } .lang button { padding: 5px 6px; } }
+/* 단체 사진 배경 버튼은 휴대폰에서는 숨긴다 (노트북 · TV 에서만 씀) */
+@media (max-width: 520px) { #bgBtn { display: none; } }
+
+/* 단체 사진 배경 : 사진에 걸리지 않게 아래 버튼 줄은 아예 숨긴다 (← → 로 넘기고 Esc 로 닫기) */
+.bg-view .bg-bar { display: none; }
