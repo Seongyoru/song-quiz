@@ -691,12 +691,24 @@
     $('#lsMsg').textContent = T('불러오는 중...');
     // 플레이어마다 : 길이를 알기 위해 소리 없이 재생 → 구간 시작으로 이동 → 시작점에서 재생되는 걸 확인하면 준비 완료
     const st = ps.map((p, k) => ({ p, want: clipOf(ids[k])[0], i: ids[k], seg: null, seekAt: 0, ok: false }));
-    st.forEach((x) => { x.p.mute(); x.p.playVideo(); });
     const t0 = performance.now();
     let armedAt = 0;
     const rate = L.kind === 'hl' ? lsRate() : 1;
     // 유튜브 플레이어는 보통 2배까지라서, 3배는 2배로 틀면서 1초마다 1초씩 건너뛴다 (플레이어가 3배를 지원하면 그대로)
     let skip = false, skipAt = 0;
+    st.forEach((x) => {
+      // 미리 받아서 시작 위치에 멈춰 있으면 확인 과정 없이 바로 준비 완료
+      const ours = ((x.p.getVideoData && x.p.getVideoData()) || {}).video_id === x.want;
+      if (ours && x.p.getDuration() > 0 && x.p.getPlayerState() === 2) {
+        const seg = lsSegment(x.p, x.i);
+        if (Math.abs(x.p.getCurrentTime() - seg[0]) < 0.6) {
+          const can = (x.p.getAvailablePlaybackRates && x.p.getAvailablePlaybackRates()) || [];
+          skip = skip || (rate > 2 && !can.includes(rate)); x.p.setPlaybackRate(rate > 2 && !can.includes(rate) ? 2 : rate);
+          x.seg = seg; x.ok = true; x.pre = true; return;
+        }
+      }
+      x.p.mute(); x.p.playVideo();
+    });
     lsTimer = setInterval(() => {
       const now = performance.now();
       if (!armedAt) {
@@ -713,7 +725,7 @@
         if (st.every((x) => x.ok)) {
           // 다 준비되면 한꺼번에 소리를 켜고 시간을 잰다
           armedAt = now;
-          st.forEach((x) => { x.p.unMute(); if (st.length > 1) x.p.playVideo(); });
+          st.forEach((x) => { x.p.unMute(); if (st.length > 1 || x.pre) x.p.playVideo(); });
           $('#lsMsg').textContent = '';
           $('#lsEq').classList.add('on');
           L.played = true;

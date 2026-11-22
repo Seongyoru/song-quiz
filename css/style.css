@@ -786,3 +786,9 @@ body.big .rbg-txt b { font-size: clamp(36px, 5vw, 56px); }
 .lucky .lk-board li.top { background: rgba(255, 209, 102, .14); font-size: 20px; }
 .lucky .lk-board li i { width: 30px; text-align: center; font-style: normal; font-family: var(--fd); color: #ffd166; }
 .lucky .lk-board li b { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+
+/* 가리개로 가려져 있는 동안은 유튜브 플레이어를 작게 : 유튜브가 저화질로 받아서 느린 와이파이에서도 빨리 재생된다
+   (가리개를 잠깐 열거나 정답이 공개되면 원래 크기 → 화질도 다시 올라감) */
+.ls-player:has(.ls-cover:not([hidden]):not(.peek)) iframe,
+.ls-player:has(.ls-cover:not([hidden]):not(.peek)) #lsYt,
+.ls-yt-x iframe { inset: 0 auto auto 0; width: 356px; height: 200px; }
