@@ -1349,7 +1349,8 @@
   $('#bgNext').addEventListener('click', () => bgShow(BG.i + 1));
   $('#bgExit').addEventListener('click', bgClose);
   $('#bgView').addEventListener('mousemove', bgPoke);
-  $('#bgImg').addEventListener('click', bgPoke);
+  // 마우스 : 화면 오른쪽을 누르면 다음 그림, 왼쪽을 누르면 이전 그림
+  $('#bgView').addEventListener('click', (e) => { if (e.target.closest('.bg-bar')) return; bgShow(BG.i + (e.clientX >= window.innerWidth / 2 ? 1 : -1)); });
   // Esc 로 전체 화면이 풀리면 보기도 닫는다
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !$('#bgView').hidden) $('#bgView').hidden = true; });
   document.addEventListener('keydown', (e) => {

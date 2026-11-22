@@ -32,7 +32,7 @@ const I18N = (() => {
     '닫기': ['閉じる', 'Close'],
     '단체 사진 배경': ['集合写真の背景', 'Group photo backdrop'],
     '🔒 비밀번호를 넣으면 배경 이미지를 고를 수 있어요': ['🔒 パスワードを入れると背景画像を選べます', '🔒 Enter the password to pick a backdrop'],
-    '고르면 전체 화면으로 보여요. ← → 로 바꾸고, Esc 로 닫아요.': ['選ぶと全画面で表示します。← → で切り替え、Esc で閉じます。', 'Pick one to show it full screen. ← → to switch, Esc to close.'],
+    '고르면 전체 화면으로 보여요. 화면 오른쪽 · 왼쪽 클릭이나 ← → 로 바꾸고, Esc 로 닫아요.': ['選ぶと全画面で表示します。画面の右・左クリックか ← → で切り替え、Esc で閉じます。', 'Pick one to show it full screen. Click the right / left side or press ← → to switch, Esc to close.'],
     '이미지를 불러오지 못했어요': ['画像を読み込めませんでした', 'Could not load the image'],
     '이전': ['前へ', 'Previous'],
     '다음': ['次へ', 'Next'],
