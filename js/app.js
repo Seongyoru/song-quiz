@@ -489,6 +489,61 @@
       return false;
     }
   }
+  /* ---------- 단체 사진 배경 : bg/ 의 암호화된 이미지를 비밀번호(더빙과 같은 방식)로 풀어 전체 화면으로 ---------- */
+  const BG = { key: null, list: [], urls: new Map(), i: 0, hideT: 0 };
+  async function bgUnlock(pass, quiet) {
+    try {
+      const meta = await (await fetch('bg/meta.json', { cache: 'no-cache' })).json();
+      const buf = await (await fetch('bg/list.bin', { cache: 'no-cache' })).arrayBuffer();
+      const tries = [pass]; if (/[a-zA-Z]/.test(pass)) tries.push(toHangul(pass));
+      for (const p of tries) {
+        try { const k = await dubKey(p, meta); BG.list = JSON.parse(new TextDecoder().decode(await dubOpen(buf, k))); BG.key = k; store.set('sq_bgpw', p); return true; } catch (e) { /* 다음 후보 */ }
+      }
+    } catch (e) { /* 받기 실패 */ }
+    if (!quiet) toast(T('비밀번호가 맞지 않아요'));
+    return false;
+  }
+  // 그림 하나 (t = 고르기 칸의 작은 그림) → 풀어서 blob 주소로
+  const bgUrl = (f, t) => {
+    const id = f + (t ? '.t' : '');
+    if (!BG.urls.has(id)) BG.urls.set(id, fetch(`bg/${id}.bin`).then((r) => r.arrayBuffer()).then((b) => dubOpen(b, BG.key)).then((p) => URL.createObjectURL(new Blob([p], { type: 'image/jpeg' }))));
+    return BG.urls.get(id);
+  };
+  function bgGrid() {
+    $('#bgLock').hidden = !!BG.key;
+    $('#bgGrid').hidden = $('#bgNote').hidden = !BG.key;
+    if (!BG.key || $('#bgGrid').childElementCount) return;
+    BG.list.forEach((x, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'bg-item';
+      const img = document.createElement('img'); img.alt = '';
+      const cap = document.createElement('span'); cap.textContent = `${String(i + 1).padStart(2, '0')} · ${x.t}`;
+      b.append(img, cap);
+      bgUrl(x.f, true).then((u) => { img.src = u; }).catch(() => {});
+      b.addEventListener('click', () => bgShow(i));
+      $('#bgGrid').append(b);
+    });
+  }
+  function bgPoke() {
+    $('#bgView').classList.add('ui');
+    clearTimeout(BG.hideT);
+    BG.hideT = setTimeout(() => $('#bgView').classList.remove('ui'), 2200);
+  }
+  async function bgShow(i) {
+    const n = BG.list.length;
+    BG.i = ((i % n) + n) % n;
+    const v = $('#bgView');
+    if (v.hidden) { v.hidden = false; if (v.requestFullscreen) v.requestFullscreen().catch(() => {}); }
+    $('#bgName').textContent = `${BG.i + 1} / ${n} · ${BG.list[BG.i].t}`;
+    bgPoke();
+    const want = BG.i;
+    try { const u = await bgUrl(BG.list[want].f); if (want === BG.i) $('#bgImg').src = u; } catch (e) { toast(T('이미지를 불러오지 못했어요')); }
+    // 앞뒤 그림은 미리 풀어 둔다
+    [1, -1].forEach((d) => bgUrl(BG.list[(BG.i + d + n) % n].f).catch(() => {}));
+  }
+  function bgClose() {
+    $('#bgView').hidden = true;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }
   // 곡 하나의 소리 : 고른 폴더의 파일이면 그대로, 사이트 더빙이면 받아서 풀기
   async function dubBlob(i) {
     const v = DUB.files.get(i);
@@ -1226,7 +1281,7 @@
   $('#cupAgain').addEventListener('click', cupSetup);
   $('#shareCup').addEventListener('click', shareCup);
   document.addEventListener('keydown', (e) => {
-    if (!A || !$('#help').hidden) return;
+    if (!A || !$('#help').hidden || !$('#bgDlg').hidden || !$('#bgView').hidden) return;
     const typing = e.target.closest && e.target.closest('input, select, textarea');
     if (mode === 'updown') {
       if ($('#udBtns').hidden) return;
@@ -1278,6 +1333,34 @@
   $('#sfxBtn').addEventListener('click', () => { store.set('sq_sfx', !sfxOn()); syncSfx(); sfx('hint', 0.45); });
   syncSfx();
   $('#helpBtn').addEventListener('click', () => { $('#help').hidden = false; });
+  // 단체 사진 배경
+  $('#bgBtn').addEventListener('click', async () => {
+    $('#bgDlg').hidden = false;
+    if (!BG.key && store.get('sq_bgpw', '')) await bgUnlock(store.get('sq_bgpw', ''), true);
+    bgGrid();
+    if (!BG.key) $('#bgPw').focus();
+  });
+  const bgTry = async () => { const v = $('#bgPw').value.trim(); if (!v) { $('#bgPw').focus(); return; } if (await bgUnlock(v)) { $('#bgPw').value = ''; bgGrid(); } };
+  $('#bgUnlock').addEventListener('click', bgTry);
+  $('#bgPw').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); bgTry(); } });
+  $('#bgClose').addEventListener('click', () => { $('#bgDlg').hidden = true; });
+  $('#bgDlg').addEventListener('click', (e) => { if (e.target.id === 'bgDlg') $('#bgDlg').hidden = true; });
+  $('#bgPrev').addEventListener('click', () => bgShow(BG.i - 1));
+  $('#bgNext').addEventListener('click', () => bgShow(BG.i + 1));
+  $('#bgExit').addEventListener('click', bgClose);
+  $('#bgView').addEventListener('mousemove', bgPoke);
+  $('#bgImg').addEventListener('click', bgPoke);
+  // Esc 로 전체 화면이 풀리면 보기도 닫는다
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !$('#bgView').hidden) $('#bgView').hidden = true; });
+  document.addEventListener('keydown', (e) => {
+    if (!$('#bgView').hidden) {
+      if (e.key === 'ArrowRight' || e.key === ' ') bgShow(BG.i + 1);
+      else if (e.key === 'ArrowLeft') bgShow(BG.i - 1);
+      else if (e.key === 'Escape') bgClose();
+      else return;
+      e.preventDefault(); e.stopImmediatePropagation();
+    } else if (!$('#bgDlg').hidden && e.key === 'Escape') $('#bgDlg').hidden = true;
+  }, true);
   $('#helpClose').addEventListener('click', () => { $('#help').hidden = true; });
   $('#help').addEventListener('click', (e) => { if (e.target.id === 'help') $('#help').hidden = true; });
   // 언어만 바꾸고 진행 중인 게임은 그대로 다시 그린다

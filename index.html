@@ -24,6 +24,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M2.8 19.5c.6-3.4 3.2-5.4 6.2-5.4s5.6 2 6.2 5.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="17" cy="9" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M17.5 14.2c2 .4 3.4 2 3.8 4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <i class="live-dot"></i><span id="roomBtnTxt" data-t="방 만들기"></span>
     </button>
+    <button type="button" class="icon-btn" id="bgBtn" aria-label="단체 사진 배경" data-t-label="단체 사진 배경" title="단체 사진 배경">🖼️</button>
     <button type="button" class="icon-btn" id="sfxBtn">🔊</button>
     <button type="button" class="icon-btn" id="helpBtn" aria-label="도움말" data-t-label="도움말">?</button>
     <div class="lang" id="lang">
@@ -328,6 +329,29 @@
     </div>
     <div class="sl-wrap"><table class="sl-table" id="slTable"></table></div>
     <p class="room-note" data-t="한글로 적은 답은 표기가 한두 글자 달라도 정답으로 인정해요."></p>
+  </div>
+</div>
+<!-- 단체 사진 배경 : 비밀번호를 넣으면 이미지를 골라 전체 화면으로 띄운다 (이미지는 bg/ 에 암호화돼 있음) -->
+<div class="modal" id="bgDlg" hidden>
+  <div class="modal-card bg-card">
+    <button type="button" class="room-x" id="bgClose" aria-label="닫기" data-t-label="닫기">✕</button>
+    <h3 data-t="단체 사진 배경"></h3>
+    <div class="ly-dub ly-lock bg-lock" id="bgLock">
+      <span class="ls-opt-k" data-t="🔒 비밀번호를 넣으면 배경 이미지를 고를 수 있어요"></span>
+      <input id="bgPw" class="pw" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-t-ph="비밀번호">
+      <button type="button" class="btn main" id="bgUnlock" data-t="잠금 풀기"></button>
+    </div>
+    <p class="room-note" id="bgNote" hidden data-t="고르면 전체 화면으로 보여요. ← → 로 바꾸고, Esc 로 닫아요."></p>
+    <div class="bg-grid" id="bgGrid" hidden></div>
+  </div>
+</div>
+<div class="bg-view" id="bgView" hidden>
+  <img id="bgImg" alt="">
+  <div class="bg-bar">
+    <button type="button" id="bgPrev" aria-label="이전" data-t-label="이전">‹</button>
+    <span id="bgName"></span>
+    <button type="button" id="bgNext" aria-label="다음" data-t-label="다음">›</button>
+    <button type="button" id="bgExit" aria-label="닫기" data-t-label="닫기">✕</button>
   </div>
 </div>
 <div class="modal" id="help" hidden>
