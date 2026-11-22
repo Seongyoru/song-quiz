@@ -823,3 +823,6 @@ body.big .ls-badge { left: 22px; top: 20px; font-size: 17px; padding: 6px 16px; 
 
 /* 배속 Q 가리개 : 판이 배속만큼 빨리(느리게) 돈다 */
 @media (prefers-reduced-motion: no-preference) { .ls-cover[data-kind="hl"] .tt.on .vinyl { animation-duration: var(--spin, 1.8s); } }
+
+/* 듣기 퀴즈 : 아직 맞힌 기록이 없을 때는 빈 점수 줄을 없애서 「n번째 문제」와 설명을 붙인다 */
+#lsScore:empty { display: none; }
