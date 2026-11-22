@@ -635,6 +635,8 @@
     if (L.empty) $('#lsMsg').textContent = T(L.kind === 'lyric' ? '「가사 목록 편집」에 가사를 먼저 적어 주세요' : L.kind === 'rev' ? '음원 파일을 먼저 골라 주세요' : '이 난이도에는 들을 수 있는 곡이 없어요');
     $('#lsCover').hidden = done;
     $('#lsCover').classList.toggle('solid', !yk);
+    $('#lsCover').dataset.kind = L.kind;
+    $('#lsCover').dataset.n = L.kind === 'mix' ? (L.songs.length || lsMixN()) : 1;
     // 가리개 왼쪽 위 라벨 : 지금 어떤 퀴즈인지
     $('#lsBadge').textContent = { intro: 'INTRO', hl: `${lsRate()}x SPEED`, outro: 'OUTRO', mix: 'MASHUP', lyric: 'LYRICS' }[L.kind] || '';
     $('#lsKeys').textContent = L.kind === 'lyric' ? T('키보드 : 스페이스 = 읽어 주기 · 엔터 = 답 확인 · → = 다음 문제')

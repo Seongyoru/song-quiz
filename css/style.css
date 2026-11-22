@@ -805,3 +805,18 @@ body.big .rbg-txt b { font-size: clamp(36px, 5vw, 56px); }
 .ls-badge:empty { display: none; }
 body.big .ls-badge { left: 22px; top: 20px; font-size: 17px; padding: 6px 16px; }
 @media (max-width: 520px) { .ls-badge { left: 10px; top: 9px; font-size: 11px; padding: 3px 10px; } }
+
+/* 동시 재생 Q 가리개 : 판 2장 · 3장이 겹쳐서 제각각 돈다 */
+.tt .v1 { z-index: 1; }
+.tt .arm { z-index: 2; }
+.vinyl.vx { display: none; }
+.vx .vinyl-label { inset: 33%; background: radial-gradient(circle at 40% 35%, #fff, color-mix(in srgb, var(--ac) 45%, #fff)); }
+.vx.v3 .vinyl-label { background: radial-gradient(circle at 40% 35%, #fff, color-mix(in srgb, var(--ac2) 80%, #fff)); }
+.ls-cover[data-kind="mix"]::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 45%, transparent 30%, rgba(255, 255, 255, .14) 30.5% 31.5%, transparent 32% 40%, rgba(255, 255, 255, .1) 40.5% 41.5%, transparent 42%); }
+.ls-cover[data-kind="mix"] .vx.v2 { display: block; inset: 9% auto auto -34%; width: 82%; height: 82%; }
+.ls-cover[data-kind="mix"][data-n="2"] .v1 { inset: 0 -16% 0 16%; }
+.ls-cover[data-kind="mix"][data-n="3"] .vx.v2 { inset: 13% auto auto -50%; width: 74%; height: 74%; }
+.ls-cover[data-kind="mix"][data-n="3"] .vx.v3 { display: block; inset: 13% -50% auto auto; width: 74%; height: 74%; }
+.ls-cover[data-kind="mix"][data-n="3"] .arm { right: -40%; }
+.ls-cover[data-kind="mix"] .tt.on .vx.v2 { animation-duration: 2.6s; animation-direction: reverse; }
+.ls-cover[data-kind="mix"] .tt.on .vx.v3 { animation-duration: 1.2s; }
