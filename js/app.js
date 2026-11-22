@@ -389,7 +389,9 @@
   }
   const loadYT = () => loadPlayer('lsYt').then((p) => { yt = p; return p; });
   const MIX_EL = ['lsYt', 'lsYt2', 'lsYt3'];
+  let preGen = 0; // 미리 받기 차례 : 멈추거나 새로 틀면 이전 미리 받기는 그만둔다
   function lsStop() {
+    preGen += 1;
     clearInterval(lsTimer); clearTimeout(lsWatch);
     $('#lsEq').classList.remove('on');
     // 바로 멈춘다 : Promise 로 미루면 곧이어 보내는 재생 명령 뒤에 멈춤이 실행돼 소리가 안 난다
@@ -586,8 +588,10 @@
     pick.forEach((i) => used.add(i));
     if (kind === 'lyric') { L.item = lyItems()[pick[0]]; L.song = L.item.song; } else if (kind === 'rev') { L.file = pick[0]; L.song = rvSongOf(RV.files[pick[0]].name); L.anchor = null; } else { L.songs = pick; L.song = pick[0]; }
     renderListen();
-    if (kind === 'mix') L.songs.forEach((i, k) => loadPlayer(MIX_EL[k]).then((p) => { if (L && L.songs[k] === i) p.cueVideoById(clipOf(i)[0]); }));
-    else if (YT_KINDS.includes(kind)) loadYT().then((p) => { if (L && L.song === pick[0]) p.cueVideoById(clipOf(pick[0])[0]); });
+    // 문제가 나오면 바로 소리 없이 미리 받아서 시작 위치에 멈춰 둔다 (광고도 이때 조용히 지나가게)
+    const gen = preGen, myL = L;
+    if (kind === 'mix') L.songs.forEach((i, k) => loadPlayer(MIX_EL[k]).then((p) => { if (L === myL && gen === preGen) lsPreload(p, i, gen, myL); }));
+    else if (YT_KINDS.includes(kind)) loadYT().then((p) => { if (L === myL && gen === preGen) lsPreload(p, pick[0], gen, myL); });
     if (window.ROOM) window.ROOM.newRound();
   }
   const songLine = (s) => `<b>${esc(s.t)}</b><span>${esc([s.ko, s.en !== s.t ? s.en : ''].filter(Boolean).join(' · '))}</span>`;
@@ -657,6 +661,24 @@
     if (L.kind === 'mix') { const st = hl != null ? hl : dur * 0.3; return [st, st + L.secs]; }
     const end = e != null ? e : Math.max(0, dur - 1.2);
     return [Math.max(0, end - L.secs), end];
+  }
+  // 미리 받기 : 소리 끄고 재생 → 구간 시작으로 이동 → 거기서 재생되는 걸 확인하면 멈춰 둔다. 듣기를 누르면 곧바로 시작
+  function lsPreload(p, i, gen, myL) {
+    const [want, o, hl, e] = clipOf(i);
+    const hint = L.kind === 'intro' ? o : (L.kind === 'hl' || L.kind === 'mix') ? hl : e != null ? Math.max(0, e - L.secs) : null;
+    try { p.mute(); p.loadVideoById({ videoId: want, startSeconds: hint || 0 }); } catch (err) { return; }
+    const t0 = performance.now();
+    let seg = null, seekAt = 0;
+    const iv = setInterval(() => {
+      if (gen !== preGen || L !== myL || L.state !== 'play') { clearInterval(iv); return; }
+      const now = performance.now();
+      if (now - t0 > 40000) { clearInterval(iv); try { p.pauseVideo(); } catch (err) { /* 무시 */ } return; }
+      const s = p.getPlayerState();
+      const ours = ((p.getVideoData && p.getVideoData()) || {}).video_id === want;
+      if (!seg) { if (s === 1 && ours && p.getDuration() > 0) { seg = lsSegment(p, i); p.seekTo(seg[0], true); seekAt = now; } return; }
+      if (s === 1 && Math.abs(p.getCurrentTime() - seg[0]) < 1.2) { clearInterval(iv); p.pauseVideo(); p.seekTo(seg[0], true); }
+      else if (now - seekAt > 2500) { p.seekTo(seg[0], true); seekAt = now; }
+    }, 80);
   }
   async function lsPlay() {
     if (!L || L.state !== 'play' || L.empty) return;
