@@ -119,36 +119,6 @@
           <button type="button" data-v="2" data-t="2곡"></button><button type="button" data-v="3" data-t="3곡"></button>
         </div>
       </div>
-      <!-- 넓은 화면(크게 보기)에서는 왼쪽 = 플레이어, 오른쪽 = 답 입력 -->
-      <div class="ls-stage">
-      <div class="ls-left">
-      <div class="ls-player">
-        <div id="lsYt"></div>
-        <div class="ls-yt-x"><div id="lsYt2"></div></div>
-        <div class="ls-yt-x"><div id="lsYt3"></div></div>
-        <div class="ls-cover" id="lsCover">
-          <span class="ls-badge" id="lsBadge"></span>
-          <!-- 턴테이블 : 소리가 나는 동안 레코드가 돌고 톤암이 내려온다 (퀴즈마다 모양이 조금씩 다름) -->
-          <div class="tt" id="lsEq">
-            <div class="vinyl vx v2"><div class="vinyl-label"><i class="vinyl-hole"></i></div></div>
-            <div class="vinyl vx v3"><div class="vinyl-label"><i class="vinyl-hole"></i></div></div>
-            <div class="vinyl v1">
-              <div class="vinyl-label">
-                <svg id="lsLabel" viewBox="0 0 64 64" aria-hidden="true"></svg>
-                <i class="vinyl-hole"></i>
-              </div>
-            </div>
-            <div class="arm"><i class="arm-base"></i><i class="arm-bar"></i><i class="arm-head"></i></div>
-          </div>
-          <!-- 가사 Q : 말풍선 -->
-          <div class="ly-art" aria-hidden="true"><div class="ly-bubble"><i></i><i></i><i></i></div><div class="ly-mic"><i></i></div></div>
-          <div class="ls-sec" id="lsSec"></div>
-          <p class="ls-msg" id="lsMsg"></p>
-          <button type="button" class="chip ls-peek" id="lsPeek" data-t="가리개 잠깐 열기 (광고 건너뛰기)"></button>
-        </div>
-      </div>
-      </div>
-      <div class="ls-right">
       <div class="q-bar">
         <span class="q-no" id="lsNo"></span>
         <div class="q-tools">
@@ -207,6 +177,27 @@
         </div>
       </div>
 
+      <div class="ls-player">
+        <div id="lsYt"></div>
+        <div class="ls-yt-x"><div id="lsYt2"></div></div>
+        <div class="ls-yt-x"><div id="lsYt3"></div></div>
+        <div class="ls-cover" id="lsCover">
+          <span class="ls-badge" id="lsBadge"></span>
+          <!-- 턴테이블 : 소리가 나는 동안 레코드가 돌고 톤암이 내려온다 -->
+          <div class="tt" id="lsEq">
+            <div class="vinyl">
+              <div class="vinyl-label">
+                <svg id="lsLabel" viewBox="0 0 64 64" aria-hidden="true"></svg>
+                <i class="vinyl-hole"></i>
+              </div>
+            </div>
+            <div class="arm"><i class="arm-base"></i><i class="arm-bar"></i><i class="arm-head"></i></div>
+          </div>
+          <div class="ls-sec" id="lsSec"></div>
+          <p class="ls-msg" id="lsMsg"></p>
+          <button type="button" class="chip ls-peek" id="lsPeek" data-t="가리개 잠깐 열기 (광고 건너뛰기)"></button>
+        </div>
+      </div>
       <div class="ls-ctrl" id="lsCtrl">
         <button type="button" class="btn main big" id="lsPlay"></button>
         <button type="button" class="btn big" id="lsMore"></button>
@@ -228,8 +219,6 @@
         <button type="button" class="btn main" id="lsNext" data-t="다음 문제 →"></button>
       </div>
       <p class="q-keys" id="lsKeys"></p>
-      </div>
-      </div>
     </div>
 
     <!-- JAM'S 퀴즈 : 멤버 · 밴드 4지선다, 한 판 10문제 -->
